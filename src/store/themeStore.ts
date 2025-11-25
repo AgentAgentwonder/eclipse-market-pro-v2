@@ -1,5 +1,6 @@
-import { create } from 'zustand';
-import { createJSONStorage, persist } from 'zustand/middleware';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import { subscribeWithSelector } from 'zustand/middleware';
+import { createBoundStoreWithMiddleware } from './createBoundStore';
 import { getPersistentStorage } from './storage';
 
 export interface ThemeColors {
@@ -178,9 +179,10 @@ const findThemeById = (id: string, customThemes: ThemeDefinition[]) => {
   return BUILTIN_THEMES.concat(customThemes).find(theme => theme.id === id);
 };
 
-export const useThemeStore = create<ThemeStoreState>()(
-  persist(
-    (set, get) => ({
+const storeResult = createBoundStoreWithMiddleware<ThemeStoreState>()(
+  subscribeWithSelector(
+    persist(
+      (set, get) => ({
       activeThemeId: BUILTIN_THEMES[0].id,
       currentTheme: BUILTIN_THEMES[0],
       customThemes: [],
@@ -266,23 +268,35 @@ export const useThemeStore = create<ThemeStoreState>()(
         }
       },
       listThemes: () => BUILTIN_THEMES.concat(get().customThemes),
-    }),
-    {
-      name: 'eclipse-theme-store',
-      storage: createJSONStorage(getPersistentStorage),
-      partialize: state => ({
-        activeThemeId: state.activeThemeId,
-        customThemes: state.customThemes,
       }),
-      onRehydrateStorage: () => state => {
-        if (!state) {
-          return;
-        }
+      {
+        name: 'eclipse-theme-store',
+        storage: createJSONStorage(getPersistentStorage),
+        partialize: state => ({
+          activeThemeId: state.activeThemeId,
+          customThemes: state.customThemes,
+        }),
+        onRehydrateStorage: () => state => {
+          if (!state) {
+            return;
+          }
 
-        const theme = findThemeById(state.activeThemeId, state.customThemes) ?? BUILTIN_THEMES[0];
-        state.currentTheme = theme;
-        state.activeThemeId = theme.id;
-      },
-    }
+          const theme = findThemeById(state.activeThemeId, state.customThemes) ?? BUILTIN_THEMES[0];
+          state.currentTheme = theme;
+          state.activeThemeId = theme.id;
+        },
+      }
+    )
   )
 );
+
+export const useThemeStore = storeResult.useStore;
+export const themeStore = storeResult.store;
+
+export const useCurrentTheme = () => {
+  return useThemeStore(state => state.currentTheme);
+};
+
+export const useCustomThemes = () => {
+  return useThemeStore(state => state.customThemes);
+};

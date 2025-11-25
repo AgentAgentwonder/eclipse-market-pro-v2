@@ -183,3 +183,14 @@ export const usePortfolioTotals = () => {
     totalPnlPercent: state.totalPnlPercent,
   }));
 };
+
+export const usePortfolioStatus = () => {
+  return usePortfolioStore(state => ({
+    isLoading: state.isLoading,
+    error: state.error,
+  }));
+};
+
+export const useAnalyticsCache = () => {
+  return usePortfolioStore(state => state.analyticsCache);
+};

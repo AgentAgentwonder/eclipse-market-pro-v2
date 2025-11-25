@@ -13,7 +13,7 @@ import {
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useTradingStore } from '@/store/tradingStore';
 import { useWalletStore } from '@/store/walletStore';
-import { useShallow } from 'zustand/react/shallow';
+import { useShallow } from '@/store/createBoundStore';
 import { AlertCircle } from 'lucide-react';
 import type { CreateOrderRequest } from '@/types';
 

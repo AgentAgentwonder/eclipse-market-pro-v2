@@ -41,9 +41,9 @@ export function WalletBalanceExample() {
   };
 
   React.useEffect(() => {
-    // Load balances on mount
+    // Load balances on mount and when address changes
     loadBalances(address);
-  }, [loadBalances]);
+  }, [address, loadBalances]);
 
   return (
     <div className="p-6 bg-background-secondary rounded-lg border border-border">

@@ -6,9 +6,8 @@ import { StatusBadge } from '@/components/ui/status-badge';
 import { SkeletonTable } from '@/components/ui/skeleton-table';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useTradingStore } from '@/store/tradingStore';
-import { useShallow } from 'zustand/react/shallow';
+import { useShallow } from '@/store/createBoundStore';
 import { X, AlertCircle } from 'lucide-react';
-import type { Order } from '@/types';
 
 export function OrderBlotter() {
   const tradingSelector = useCallback(

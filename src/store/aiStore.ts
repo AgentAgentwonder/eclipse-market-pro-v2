@@ -1,6 +1,5 @@
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
-import { subscribeWithSelector } from 'zustand/middleware';
 import type {
   ChatMessage,
   ChatResponse,
@@ -49,7 +48,7 @@ const initialState = {
   error: null,
 };
 
-const storeWithMiddleware = (set: any, get: any, api: any) => ({
+const storeResult = createBoundStore<AiStoreState>((set, get) => ({
   ...initialState,
 
   sendMessage: async (message: string, commandType?: string) => {
@@ -237,11 +236,7 @@ const storeWithMiddleware = (set: any, get: any, api: any) => ({
   reset: () => {
     set(initialState);
   },
-});
-
-const storeResult = createBoundStore<AiStoreState>((set, get, api) =>
-  subscribeWithSelector(storeWithMiddleware)(set, get, api)
-);
+}));
 
 export const useAiStore = storeResult.useStore;
 export const aiStore = storeResult.store;

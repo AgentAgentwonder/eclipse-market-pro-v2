@@ -1,5 +1,6 @@
-import { create } from 'zustand';
-import { createJSONStorage, persist } from 'zustand/middleware';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import { subscribeWithSelector } from 'zustand/middleware';
+import { createBoundStoreWithMiddleware } from './createBoundStore';
 import { getPersistentStorage } from './storage';
 
 const DEFAULTS = {
@@ -35,24 +36,41 @@ const clampFontScale = (value: number) => {
   return Math.min(2, Math.max(1, value));
 };
 
-export const useAccessibilityStore = create<AccessibilityState>()(
-  persist(
-    set => ({
-      ...DEFAULTS,
-      setFontScale: value => set(() => ({ fontScale: clampFontScale(value) })),
-      toggleHighContrast: () => set(state => ({ highContrastMode: !state.highContrastMode })),
-      toggleReducedMotion: () => set(state => ({ reducedMotion: !state.reducedMotion })),
-      toggleScreenReaderOptimizations: () =>
-        set(state => ({ screenReaderOptimizations: !state.screenReaderOptimizations })),
-      toggleKeyboardNavigationHints: () =>
-        set(state => ({ keyboardNavigationHints: !state.keyboardNavigationHints })),
-      toggleFocusIndicatorEnhanced: () =>
-        set(state => ({ focusIndicatorEnhanced: !state.focusIndicatorEnhanced })),
-      resetToDefaults: () => set(() => ({ ...DEFAULTS })),
-    }),
-    {
-      name: 'eclipse-accessibility-store',
-      storage: createJSONStorage(getPersistentStorage),
-    }
+const storeResult = createBoundStoreWithMiddleware<AccessibilityState>()(
+  subscribeWithSelector(
+    persist(
+      set => ({
+        ...DEFAULTS,
+        setFontScale: value => set(() => ({ fontScale: clampFontScale(value) })),
+        toggleHighContrast: () => set(state => ({ highContrastMode: !state.highContrastMode })),
+        toggleReducedMotion: () => set(state => ({ reducedMotion: !state.reducedMotion })),
+        toggleScreenReaderOptimizations: () =>
+          set(state => ({ screenReaderOptimizations: !state.screenReaderOptimizations })),
+        toggleKeyboardNavigationHints: () =>
+          set(state => ({ keyboardNavigationHints: !state.keyboardNavigationHints })),
+        toggleFocusIndicatorEnhanced: () =>
+          set(state => ({ focusIndicatorEnhanced: !state.focusIndicatorEnhanced })),
+        resetToDefaults: () => set(() => ({ ...DEFAULTS })),
+      }),
+      {
+        name: 'eclipse-accessibility-store',
+        storage: createJSONStorage(getPersistentStorage),
+      }
+    )
   )
 );
+
+export const useAccessibilityStore = storeResult.useStore;
+export const accessibilityStore = storeResult.store;
+
+export const useFontScale = () => {
+  return useAccessibilityStore(state => state.fontScale);
+};
+
+export const useHighContrastMode = () => {
+  return useAccessibilityStore(state => state.highContrastMode);
+};
+
+export const useReducedMotion = () => {
+  return useAccessibilityStore(state => state.reducedMotion);
+};

@@ -1,9 +1,7 @@
-import { create } from 'zustand';
-<<<<<<< HEAD
-=======
-import { createJSONStorage, persist } from 'zustand/middleware';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import { subscribeWithSelector } from 'zustand/middleware';
+import { createBoundStoreWithMiddleware } from './createBoundStore';
 import { getPersistentStorage } from './storage';
->>>>>>> 07b49b31020889e5570b784e71bee039a7dbb079
 
 export type Theme = 'dark' | 'light' | 'auto';
 
@@ -31,10 +29,7 @@ export interface ToastMessage {
 interface UiStoreState {
   theme: Theme;
   panelVisibility: PanelVisibility;
-<<<<<<< HEAD
-=======
   devConsoleVisible: boolean;
->>>>>>> 07b49b31020889e5570b784e71bee039a7dbb079
   sidebarCollapsed: boolean;
   commandPaletteOpen: boolean;
   notificationsEnabled: boolean;
@@ -50,11 +45,8 @@ interface UiStoreState {
   setTheme: (theme: Theme) => void;
   setPanelVisibility: (panel: keyof PanelVisibility, visible: boolean) => void;
   togglePanel: (panel: keyof PanelVisibility) => void;
-<<<<<<< HEAD
-=======
   setDevConsoleVisible: (visible: boolean) => void;
   toggleDevConsole: () => void;
->>>>>>> 07b49b31020889e5570b784e71bee039a7dbb079
   setSidebarCollapsed: (collapsed: boolean) => void;
   toggleSidebar: () => void;
   setCommandPaletteOpen: (open: boolean) => void;
@@ -67,11 +59,8 @@ interface UiStoreState {
   removeToast: (id: string) => void;
   clearToasts: () => void;
   setDevConsoleOpen: (open: boolean) => void;
-<<<<<<< HEAD
-=======
   closeDevtools: () => void;
   openDevtools: () => void;
->>>>>>> 07b49b31020889e5570b784e71bee039a7dbb079
   reset: () => void;
 }
 
@@ -87,10 +76,7 @@ const defaultPanelVisibility: PanelVisibility = {
 const initialState = {
   theme: 'dark' as Theme,
   panelVisibility: defaultPanelVisibility,
-<<<<<<< HEAD
-=======
   devConsoleVisible: false,
->>>>>>> 07b49b31020889e5570b784e71bee039a7dbb079
   sidebarCollapsed: false,
   commandPaletteOpen: false,
   notificationsEnabled: true,
@@ -103,167 +89,151 @@ const initialState = {
   devConsoleOpen: false,
 };
 
-<<<<<<< HEAD
-export const useUiStore = create<UiStoreState>()((set, get) => ({
-=======
-export const useUiStore = create<UiStoreState>()(
-  persist(
-    (set, get) => ({
->>>>>>> 07b49b31020889e5570b784e71bee039a7dbb079
-      ...initialState,
+const storeResult = createBoundStoreWithMiddleware<UiStoreState>()(
+  subscribeWithSelector(
+    persist(
+      (set, get) => ({
+        ...initialState,
 
-      setTheme: theme => {
-        if (get().theme === theme) return;
-        set({ theme });
-      },
+        setTheme: theme => {
+          if (get().theme === theme) return;
+          set({ theme });
+        },
 
-      setPanelVisibility: (panel, visible) => {
-        set(state => ({
-          panelVisibility: {
-            ...state.panelVisibility,
-            [panel]: visible,
-          },
-        }));
-      },
+        setPanelVisibility: (panel, visible) => {
+          set(state => ({
+            panelVisibility: {
+              ...state.panelVisibility,
+              [panel]: visible,
+            },
+          }));
+        },
 
-      togglePanel: panel => {
-        set(state => ({
-          panelVisibility: {
-            ...state.panelVisibility,
-            [panel]: !state.panelVisibility[panel],
-          },
-        }));
-      },
+        togglePanel: panel => {
+          set(state => ({
+            panelVisibility: {
+              ...state.panelVisibility,
+              [panel]: !state.panelVisibility[panel],
+            },
+          }));
+        },
 
-<<<<<<< HEAD
-=======
-      setDevConsoleVisible: visible => {
-        if (get().devConsoleVisible === visible) return;
-        set({ devConsoleVisible: visible });
-      },
+        setDevConsoleVisible: visible => {
+          if (get().devConsoleVisible === visible) return;
+          set({ devConsoleVisible: visible });
+        },
 
-      toggleDevConsole: () => {
-        set(state => ({ devConsoleVisible: !state.devConsoleVisible }));
-      },
+        toggleDevConsole: () => {
+          set(state => ({ devConsoleVisible: !state.devConsoleVisible }));
+        },
 
->>>>>>> 07b49b31020889e5570b784e71bee039a7dbb079
-      setSidebarCollapsed: collapsed => {
-        if (get().sidebarCollapsed === collapsed) return;
-        set({ sidebarCollapsed: collapsed });
-      },
+        setSidebarCollapsed: collapsed => {
+          if (get().sidebarCollapsed === collapsed) return;
+          set({ sidebarCollapsed: collapsed });
+        },
 
-      toggleSidebar: () => {
-        set(state => ({ sidebarCollapsed: !state.sidebarCollapsed }));
-      },
+        toggleSidebar: () => {
+          set(state => ({ sidebarCollapsed: !state.sidebarCollapsed }));
+        },
 
-      setCommandPaletteOpen: open => {
-        if (get().commandPaletteOpen === open) return;
-        set({ commandPaletteOpen: open });
-      },
+        setCommandPaletteOpen: open => {
+          if (get().commandPaletteOpen === open) return;
+          set({ commandPaletteOpen: open });
+        },
 
-      setNotificationsEnabled: enabled => {
-        if (get().notificationsEnabled === enabled) return;
-        set({ notificationsEnabled: enabled });
-      },
+        setNotificationsEnabled: enabled => {
+          if (get().notificationsEnabled === enabled) return;
+          set({ notificationsEnabled: enabled });
+        },
 
-      setSoundEnabled: enabled => {
-        if (get().soundEnabled === enabled) return;
-        set({ soundEnabled: enabled });
-      },
+        setSoundEnabled: enabled => {
+          if (get().soundEnabled === enabled) return;
+          set({ soundEnabled: enabled });
+        },
 
-      setAnimationsEnabled: enabled => {
-        if (get().animationsEnabled === enabled) return;
-        set({ animationsEnabled: enabled });
-      },
+        setAnimationsEnabled: enabled => {
+          if (get().animationsEnabled === enabled) return;
+          set({ animationsEnabled: enabled });
+        },
 
-      setCompactMode: compact => {
-        if (get().compactMode === compact) return;
-        set({ compactMode: compact });
-      },
+        setCompactMode: compact => {
+          if (get().compactMode === compact) return;
+          set({ compactMode: compact });
+        },
 
-      setLoading: (isLoading, message = null) => {
-        set({
-          isAppLoading: isLoading,
-          appLoadingMessage: message,
-        });
-      },
+        setLoading: (isLoading, message = null) => {
+          set({
+            isAppLoading: isLoading,
+            appLoadingMessage: message,
+          });
+        },
 
-      addToast: toast => {
-        const id = `toast-${Date.now()}-${Math.random()}`;
-        const newToast: ToastMessage = {
-          ...toast,
-          id,
-        };
-        set(state => ({
-          toasts: [...state.toasts, newToast],
-        }));
+        addToast: toast => {
+          const id = `toast-${Date.now()}-${Math.random()}`;
+          const newToast: ToastMessage = {
+            ...toast,
+            id,
+          };
+          set(state => ({
+            toasts: [...state.toasts, newToast],
+          }));
 
-        if (toast.duration) {
-          setTimeout(() => {
-            set(state => ({
-              toasts: state.toasts.filter(t => t.id !== id),
-            }));
-          }, toast.duration);
-        }
-      },
+          if (toast.duration) {
+            setTimeout(() => {
+              set(state => ({
+                toasts: state.toasts.filter(t => t.id !== id),
+              }));
+            }, toast.duration);
+          }
+        },
 
-      removeToast: id => {
-        set(state => ({
-          toasts: state.toasts.filter(t => t.id !== id),
-        }));
-      },
+        removeToast: id => {
+          set(state => ({
+            toasts: state.toasts.filter(t => t.id !== id),
+          }));
+        },
 
-      clearToasts: () => {
-        set({ toasts: [] });
-      },
+        clearToasts: () => {
+          set({ toasts: [] });
+        },
 
-      setDevConsoleOpen: open => {
-        if (get().devConsoleOpen === open) return;
-        set({ devConsoleOpen: open });
-      },
+        setDevConsoleOpen: open => {
+          if (get().devConsoleOpen === open) return;
+          set({ devConsoleOpen: open });
+        },
 
-<<<<<<< HEAD
-      reset: () => {
-        set(initialState);
-      },
-    })
+        closeDevtools: () => {
+          set({ devConsoleOpen: false });
+        },
 
-// Alias for consistency
-export const useUIStore = useUiStore;
+        openDevtools: () => {
+          set({ devConsoleOpen: true });
+        },
 
-// Selector hook for panel visibility
-export const usePanelVisibility = (panel: keyof PanelVisibility) => {
-  return useUiStore(state => state.panelVisibility[panel]);
-};
-=======
-      closeDevtools: () => {
-        set({ devConsoleOpen: false });
-      },
-
-      openDevtools: () => {
-        set({ devConsoleOpen: true });
-      },
-
-      reset: () => {
-        set(initialState);
-      },
-    }),
-    {
-      name: 'eclipse-ui-store',
-      storage: createJSONStorage(getPersistentStorage),
-      partialize: state => ({
-        theme: state.theme,
-        panelVisibility: state.panelVisibility,
-        sidebarCollapsed: state.sidebarCollapsed,
-        notificationsEnabled: state.notificationsEnabled,
-        soundEnabled: state.soundEnabled,
-        animationsEnabled: state.animationsEnabled,
-        compactMode: state.compactMode,
-        devConsoleOpen: state.devConsoleOpen,
+        reset: () => {
+          set(initialState);
+        },
       }),
-    }
+      {
+        name: 'eclipse-ui-store',
+        storage: createJSONStorage(getPersistentStorage),
+        partialize: state => ({
+          theme: state.theme,
+          panelVisibility: state.panelVisibility,
+          sidebarCollapsed: state.sidebarCollapsed,
+          notificationsEnabled: state.notificationsEnabled,
+          soundEnabled: state.soundEnabled,
+          animationsEnabled: state.animationsEnabled,
+          compactMode: state.compactMode,
+          devConsoleVisible: state.devConsoleVisible,
+        }),
+      }
+    )
   )
 );
+
+export const useUiStore = storeResult.useStore;
+export const uiStore = storeResult.store;
 
 export const useUIStore = useUiStore;
 
@@ -277,4 +247,11 @@ export const useDevConsole = () => {
     toggle: state.toggleDevConsole,
   }));
 };
->>>>>>> 07b49b31020889e5570b784e71bee039a7dbb079
+
+export const useTheme = () => {
+  return useUiStore(state => state.theme);
+};
+
+export const useToasts = () => {
+  return useUiStore(state => state.toasts);
+};

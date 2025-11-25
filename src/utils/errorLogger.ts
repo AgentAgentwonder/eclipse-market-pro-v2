@@ -2,6 +2,8 @@
  * Global error logging utility
  * Provides centralized error tracking and logging for the entire app
  * Persists errors to localStorage to survive restarts
+ *
+ * CRITICAL: Includes recursion prevention to avoid infinite loops
  */
 
 export interface ErrorLog {
@@ -20,6 +22,8 @@ class ErrorLogger {
   private logs: ErrorLog[] = [];
   private readonly MAX_LOGS = 100;
   private initialized = false;
+  private isLogging = false; // Recursion prevention flag
+  private loggingInProgress = new Set<string>(); // Track which log operations are in progress
 
   constructor() {
     this.loadFromStorage();
@@ -27,23 +31,35 @@ class ErrorLogger {
   }
 
   private loadFromStorage(): void {
+    if (this.isLogging) {
+      return; // Prevent recursive loading
+    }
+
     try {
+      this.isLogging = true;
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
         const parsed = JSON.parse(stored) as ErrorLog[];
         this.logs = parsed.slice(-this.MAX_LOGS);
       }
-    } catch (e) {
-      console.error('Failed to load error logs from localStorage:', e);
+    } catch (_e) {
+      // Silently ignore errors - don't call console.error as it could trigger recursive logging
+    } finally {
+      this.isLogging = false;
     }
   }
 
   private persistToStorage(): void {
+    if (this.isLogging) {
+      return; // Prevent recursive persistence
+    }
+
     try {
+      this.isLogging = true;
       // Get existing logs from storage and merge with current logs
       const stored = localStorage.getItem(STORAGE_KEY);
       let allLogs: ErrorLog[] = [];
-      
+
       if (stored) {
         try {
           allLogs = JSON.parse(stored) as ErrorLog[];
@@ -51,20 +67,19 @@ class ErrorLogger {
           allLogs = [];
         }
       }
-      
+
       // Merge and deduplicate by timestamp
       const merged = [...allLogs, ...this.logs];
-      const unique = Array.from(
-        new Map(merged.map(log => [log.timestamp, log])).values()
-      );
-      
+      const unique = Array.from(new Map(merged.map(log => [log.timestamp, log])).values());
+
       // Keep only recent logs
       const recent = unique.slice(-MAX_STORED_LOGS);
-      
+
       localStorage.setItem(STORAGE_KEY, JSON.stringify(recent));
-    } catch (e) {
-      // If localStorage fails, log to console but don't throw
-      console.error('Failed to persist error logs to localStorage:', e);
+    } catch (_e) {
+      // Silently ignore localStorage errors - don't log as it could cause recursion
+    } finally {
+      this.isLogging = false;
     }
   }
 
@@ -75,40 +90,63 @@ class ErrorLogger {
     stack?: string,
     context?: Record<string, unknown>
   ): void {
-    const errorLog: ErrorLog = {
-      timestamp: new Date().toISOString(),
-      message,
-      type,
-      source,
-      stack,
-      context,
-    };
-
-    this.logs.push(errorLog);
-
-    // Keep only recent logs to prevent memory leak
-    if (this.logs.length > this.MAX_LOGS) {
-      this.logs.shift();
+    // Prevent recursive logging - if we're already logging, skip
+    if (this.isLogging) {
+      return;
     }
 
-    // Persist to localStorage
-    if (this.initialized) {
-      this.persistToStorage();
+    // Prevent duplicate logs by source within a very short time window
+    const sourceKey = `${source}:${type}`;
+    if (this.loggingInProgress.has(sourceKey)) {
+      return;
     }
 
-    // Log to console in development
-    if (process.env.NODE_ENV === 'development') {
-      const style = `color: ${
-        type === 'error' ? '#ff6b6b' : type === 'warning' ? '#ffd93d' : '#6bcf7f'
-      }; font-weight: bold;`;
-      console.log(`%c[${type.toUpperCase()}] ${source}`, style, message);
-      if (stack) {
-        console.log('%cStack Trace:', 'color: #888; font-style: italic;');
-        console.log(stack);
+    this.isLogging = true;
+    this.loggingInProgress.add(sourceKey);
+
+    try {
+      const errorLog: ErrorLog = {
+        timestamp: new Date().toISOString(),
+        message,
+        type,
+        source,
+        stack,
+        context,
+      };
+
+      this.logs.push(errorLog);
+
+      // Keep only recent logs to prevent memory leak
+      if (this.logs.length > this.MAX_LOGS) {
+        this.logs.shift();
       }
-      if (context) {
-        console.log('%cContext:', 'color: #888; font-style: italic;', context);
+
+      // Persist to localStorage
+      if (this.initialized) {
+        this.persistToStorage();
       }
+
+      // Log to console in development - wrap in try-catch to prevent recursion
+      if (process.env.NODE_ENV === 'development') {
+        try {
+          const style = `color: ${
+            type === 'error' ? '#ff6b6b' : type === 'warning' ? '#ffd93d' : '#6bcf7f'
+          }; font-weight: bold;`;
+          console.log(`%c[${type.toUpperCase()}] ${source}`, style, message);
+          if (stack) {
+            console.log('%cStack Trace:', 'color: #888; font-style: italic;');
+            console.log(stack);
+          }
+          if (context) {
+            console.log('%cContext:', 'color: #888; font-style: italic;', context);
+          }
+        } catch (_consoleError) {
+          // Silently fail if console logging throws - don't try to log this error
+        }
+      }
+    } finally {
+      this.isLogging = false;
+      this.loggingInProgress.delete(sourceKey);
     }
   }
 
@@ -138,11 +176,18 @@ class ErrorLogger {
   }
 
   clear(): void {
-    this.logs = [];
+    if (this.isLogging) {
+      return; // Skip if already logging
+    }
+
     try {
+      this.isLogging = true;
+      this.logs = [];
       localStorage.removeItem(STORAGE_KEY);
-    } catch (e) {
-      console.error('Failed to clear error logs from localStorage:', e);
+    } catch (_e) {
+      // Silently fail - don't try to log this error
+    } finally {
+      this.isLogging = false;
     }
   }
 
@@ -158,13 +203,20 @@ class ErrorLogger {
   }
 
   getAllStoredLogs(): ErrorLog[] {
+    if (this.isLogging) {
+      return []; // Return empty if already logging to prevent recursion
+    }
+
     try {
+      this.isLogging = true;
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
         return JSON.parse(stored) as ErrorLog[];
       }
-    } catch (e) {
-      console.error('Failed to get all stored logs:', e);
+    } catch (_e) {
+      // Silently fail - don't try to log this error
+    } finally {
+      this.isLogging = false;
     }
     return [];
   }

@@ -1,7 +1,7 @@
 import { useCallback, useEffect } from 'react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useAiStore } from '@/store/aiStore';
-import { useShallow } from 'zustand/react/shallow';
+import { useShallow } from '@/store/createBoundStore';
 import { AlertTriangle, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -21,8 +21,7 @@ export function RiskBanner() {
 
   useEffect(() => {
     fetchPatternWarnings();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [fetchPatternWarnings]);
 
   const handleDismiss = useCallback(
     async (warningId: string) => {

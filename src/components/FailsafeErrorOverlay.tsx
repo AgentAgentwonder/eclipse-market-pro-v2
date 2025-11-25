@@ -10,19 +10,24 @@ export function FailsafeErrorOverlay() {
   const [errors, setErrors] = useState<ErrorLog[]>([]);
   const [isExpanded, setIsExpanded] = useState(false);
   const [showAllLogs, setShowAllLogs] = useState(false);
+  const [lastLogCount, setLastLogCount] = useState(0);
 
   useEffect(() => {
     const interval = setInterval(() => {
       const logs = errorLogger.getLogs();
-      setErrors(logs);
-    }, 100);
+      // Only update state if the number of logs has changed
+      if (logs.length !== lastLogCount) {
+        setErrors(logs);
+        setLastLogCount(logs.length);
+      }
+    }, 500); // Increased interval from 100ms to 500ms to reduce polling frequency
 
     return () => clearInterval(interval);
-  }, []);
+  }, [lastLogCount]);
 
   const errorCount = errors.filter(log => log.type === 'error').length;
   const warningCount = errors.filter(log => log.type === 'warning').length;
-  
+
   if (errorCount === 0 && warningCount === 0) {
     return null;
   }
@@ -33,12 +38,15 @@ export function FailsafeErrorOverlay() {
 
   const handleCopyAll = () => {
     const report = showAllLogs ? errorLogger.getFullErrorReport() : errorLogger.getErrorReport();
-    navigator.clipboard.writeText(report).then(() => {
-      alert('Error report copied to clipboard!');
-    }).catch(() => {
-      alert('Failed to copy. Check console for error report.');
-      console.log('ERROR REPORT:\n\n', report);
-    });
+    navigator.clipboard
+      .writeText(report)
+      .then(() => {
+        alert('Error report copied to clipboard!');
+      })
+      .catch(() => {
+        alert('Failed to copy. Check console for error report.');
+        console.log('ERROR REPORT:\n\n', report);
+      });
   };
 
   const handleClear = () => {
@@ -85,8 +93,9 @@ export function FailsafeErrorOverlay() {
       >
         <span>{errorCount > 0 ? '❌' : '⚠️'}</span>
         <span>
-          {errorCount > 0 ? `${errorCount} Error${errorCount !== 1 ? 's' : ''}` : 
-           `${warningCount} Warning${warningCount !== 1 ? 's' : ''}`}
+          {errorCount > 0
+            ? `${errorCount} Error${errorCount !== 1 ? 's' : ''}`
+            : `${warningCount} Warning${warningCount !== 1 ? 's' : ''}`}
         </span>
       </button>
 

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { useUIStore } from '../store/uiStore';
 
 interface LoadingOverlayProps {
@@ -21,7 +21,14 @@ export function LoadingOverlay({
   spinner = true,
   children,
 }: LoadingOverlayProps) {
-  const { isAppLoading, appLoadingMessage } = useUIStore();
+  const uiSelector = useCallback(
+    (state: ReturnType<typeof useUIStore.getState>) => ({
+      isAppLoading: state.isAppLoading,
+      appLoadingMessage: state.appLoadingMessage,
+    }),
+    []
+  );
+  const { isAppLoading, appLoadingMessage } = useUIStore(uiSelector);
 
   // Determine whether to show the overlay
   const shouldShow = show !== undefined ? show : isAppLoading;

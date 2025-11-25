@@ -15,10 +15,7 @@ export interface TauriHealthStatus {
 export async function checkTauriHealth(): Promise<TauriHealthStatus | null> {
   try {
     const health = await invoke<TauriHealthStatus>('check_tauri_health');
-    errorLogger.info(
-      `Tauri backend healthy (v${health.version})`,
-      'TauriHealthCheck'
-    );
+    errorLogger.info(`Tauri backend healthy (v${health.version})`, 'TauriHealthCheck');
     return health;
   } catch (error) {
     errorLogger.error(
@@ -42,7 +39,7 @@ export async function waitForTauriBackend(
   retryIntervalMs: number = 500
 ): Promise<boolean> {
   const startTime = Date.now();
-  
+
   while (Date.now() - startTime < timeoutMs) {
     const health = await checkTauriHealth();
     if (health) {
@@ -50,11 +47,8 @@ export async function waitForTauriBackend(
     }
     await new Promise(resolve => setTimeout(resolve, retryIntervalMs));
   }
-  
-  errorLogger.error(
-    `Tauri backend did not respond within ${timeoutMs}ms`,
-    'TauriHealthCheck'
-  );
+
+  errorLogger.error(`Tauri backend did not respond within ${timeoutMs}ms`, 'TauriHealthCheck');
   return false;
 }
 

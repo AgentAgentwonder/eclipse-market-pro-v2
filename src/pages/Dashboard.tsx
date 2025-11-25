@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { Metric } from '@/components/ui/metric';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { SkeletonTable } from '@/components/ui/skeleton-table';
@@ -8,79 +8,35 @@ import { useWalletStore } from '@/store/walletStore';
 import { useTradingStore } from '@/store/tradingStore';
 import { usePortfolioStore } from '@/store/portfolioStore';
 import { useAiStore } from '@/store/aiStore';
-import { useShallow } from 'zustand/react/shallow';
 import { Wallet, TrendingUp, AlertCircle, Activity } from 'lucide-react';
 
 export default function Dashboard() {
-  const walletSelector = useCallback(
-    (state: ReturnType<typeof useWalletStore.getState>) => ({
-      activeAccount: state.activeAccount,
-      balances: state.balances,
-      fetchBalances: state.fetchBalances,
-      isLoading: state.isLoading,
-      error: state.error,
-    }),
-    []
-  );
-  const {
-    activeAccount,
-    balances,
-    fetchBalances,
-    isLoading: walletLoading,
-    error: walletError,
-  } = useWalletStore(walletSelector, useShallow);
+  // Wallet selectors - primitive returns
+  const activeAccount = useWalletStore(state => state.activeAccount);
+  const balances = useWalletStore(state => state.balances);
+  const fetchBalances = useWalletStore(state => state.fetchBalances);
+  const walletLoading = useWalletStore(state => state.isLoading);
+  const walletError = useWalletStore(state => state.error);
 
-  const tradingSelector = useCallback(
-    (state: ReturnType<typeof useTradingStore.getState>) => ({
-      activeOrders: state.activeOrders,
-      getActiveOrders: state.getActiveOrders,
-      isLoading: state.isLoading,
-      error: state.error,
-    }),
-    []
-  );
-  const {
-    activeOrders,
-    getActiveOrders,
-    isLoading: tradingLoading,
-    error: tradingError,
-  } = useTradingStore(tradingSelector, useShallow);
+  // Trading selectors - primitive returns
+  const activeOrders = useTradingStore(state => state.activeOrders);
+  const getActiveOrders = useTradingStore(state => state.getActiveOrders);
+  const tradingLoading = useTradingStore(state => state.isLoading);
+  const tradingError = useTradingStore(state => state.error);
 
-  const portfolioSelector = useCallback(
-    (state: ReturnType<typeof usePortfolioStore.getState>) => ({
-      totalValue: state.totalValue,
-      totalPnl: state.totalPnl,
-      totalPnlPercent: state.totalPnlPercent,
-      fetchAnalytics: state.fetchAnalytics,
-      isLoading: state.isLoading,
-      error: state.error,
-    }),
-    []
-  );
-  const {
-    totalValue,
-    totalPnl,
-    totalPnlPercent,
-    fetchAnalytics,
-    isLoading: portfolioLoading,
-    error: portfolioError,
-  } = usePortfolioStore(portfolioSelector, useShallow);
+  // Portfolio selectors - primitive returns
+  const totalValue = usePortfolioStore(state => state.totalValue);
+  const totalPnl = usePortfolioStore(state => state.totalPnl);
+  const totalPnlPercent = usePortfolioStore(state => state.totalPnlPercent);
+  const fetchAnalytics = usePortfolioStore(state => state.fetchAnalytics);
+  const portfolioLoading = usePortfolioStore(state => state.isLoading);
+  const portfolioError = usePortfolioStore(state => state.error);
 
-  const aiSelector = useCallback(
-    (state: ReturnType<typeof useAiStore.getState>) => ({
-      patternWarnings: state.patternWarnings,
-      fetchPatternWarnings: state.fetchPatternWarnings,
-      isLoading: state.isLoading,
-      error: state.error,
-    }),
-    []
-  );
-  const {
-    patternWarnings,
-    fetchPatternWarnings,
-    isLoading: aiLoading,
-    error: aiError,
-  } = useAiStore(aiSelector, useShallow);
+  // AI selectors - primitive returns
+  const patternWarnings = useAiStore(state => state.patternWarnings);
+  const fetchPatternWarnings = useAiStore(state => state.fetchPatternWarnings);
+  const aiLoading = useAiStore(state => state.isLoading);
+  const aiError = useAiStore(state => state.error);
 
   useEffect(() => {
     if (activeAccount) {
@@ -89,8 +45,7 @@ export default function Dashboard() {
       fetchAnalytics(activeAccount.publicKey);
     }
     fetchPatternWarnings();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeAccount?.publicKey]);
+  }, [activeAccount, fetchBalances, getActiveOrders, fetchAnalytics, fetchPatternWarnings]);
 
   const accountBalances = useMemo(() => {
     if (!activeAccount) return [];

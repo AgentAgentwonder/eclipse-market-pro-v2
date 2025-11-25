@@ -48,7 +48,14 @@ export function useTauriCommand<T, A extends any[] = []>(
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<TauriError | null>(null);
 
-  const { setLoading, addToast } = useUIStore();
+  const uiSelector = useCallback(
+    (state: ReturnType<typeof useUIStore.getState>) => ({
+      setLoading: state.setLoading,
+      addToast: state.addToast,
+    }),
+    []
+  );
+  const { setLoading, addToast } = useUIStore(uiSelector);
   const mountedRef = useRef(true);
   const argsRef = useRef<A>();
 

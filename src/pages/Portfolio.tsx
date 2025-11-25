@@ -7,65 +7,37 @@ import { Metric } from '@/components/ui/metric';
 import { usePortfolioStore } from '@/store/portfolioStore';
 import { useWalletStore } from '@/store/walletStore';
 import { useAiStore } from '@/store/aiStore';
-import { useShallow } from 'zustand/react/shallow';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import { AlertCircle, TrendingUp, Sparkles } from 'lucide-react';
 
 const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 
 export default function Portfolio() {
-  const walletSelector = useCallback(
-    (state: ReturnType<typeof useWalletStore.getState>) => ({
-      activeAccount: state.activeAccount,
-    }),
-    []
-  );
-  const { activeAccount } = useWalletStore(walletSelector, useShallow);
+  // Wallet selectors - primitive returns
+  const activeAccount = useWalletStore(state => state.activeAccount);
 
-  const portfolioSelector = useCallback(
-    (state: ReturnType<typeof usePortfolioStore.getState>) => ({
-      positions: state.positions,
-      sectorAllocations: state.sectorAllocations,
-      concentrationAlerts: state.concentrationAlerts,
-      totalValue: state.totalValue,
-      totalPnl: state.totalPnl,
-      totalPnlPercent: state.totalPnlPercent,
-      fetchSectorAllocations: state.fetchSectorAllocations,
-      refreshPortfolio: state.refreshPortfolio,
-      isLoading: state.isLoading,
-      error: state.error,
-    }),
-    []
-  );
-  const {
-    positions,
-    sectorAllocations,
-    concentrationAlerts,
-    totalValue,
-    totalPnl,
-    totalPnlPercent,
-    fetchSectorAllocations,
-    refreshPortfolio,
-    isLoading,
-    error,
-  } = usePortfolioStore(portfolioSelector, useShallow);
+  // Portfolio selectors - primitive returns
+  const positions = usePortfolioStore(state => state.positions);
+  const sectorAllocations = usePortfolioStore(state => state.sectorAllocations);
+  const concentrationAlerts = usePortfolioStore(state => state.concentrationAlerts);
+  const totalValue = usePortfolioStore(state => state.totalValue);
+  const totalPnl = usePortfolioStore(state => state.totalPnl);
+  const totalPnlPercent = usePortfolioStore(state => state.totalPnlPercent);
+  const fetchSectorAllocations = usePortfolioStore(state => state.fetchSectorAllocations);
+  const refreshPortfolio = usePortfolioStore(state => state.refreshPortfolio);
+  const portfolioLoading = usePortfolioStore(state => state.isLoading);
+  const portfolioError = usePortfolioStore(state => state.error);
 
-  const aiSelector = useCallback(
-    (state: ReturnType<typeof useAiStore.getState>) => ({
-      optimizePortfolio: state.optimizePortfolio,
-      isLoading: state.isLoading,
-    }),
-    []
-  );
-  const { optimizePortfolio, isLoading: aiLoading } = useAiStore(aiSelector, useShallow);
+  // AI selectors - primitive returns
+  const optimizePortfolio = useAiStore(state => state.optimizePortfolio);
+  const aiLoading = useAiStore(state => state.isLoading);
 
   useEffect(() => {
     if (activeAccount) {
       refreshPortfolio(activeAccount.publicKey);
       fetchSectorAllocations(activeAccount.publicKey);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeAccount?.publicKey]);
+  }, [activeAccount, refreshPortfolio, fetchSectorAllocations]);
 
   const handleOptimize = useCallback(async () => {
     if (!activeAccount || positions.length === 0) return;
@@ -121,22 +93,22 @@ export default function Portfolio() {
           label="Total Value"
           value={`$${totalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
           icon={<TrendingUp className="h-4 w-4" />}
-          isLoading={isLoading}
+          isLoading={portfolioLoading}
         />
         <Metric
           label="Total P&L"
           value={`$${totalPnl.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
           change={`${totalPnlPercent >= 0 ? '+' : ''}${totalPnlPercent.toFixed(2)}%`}
           changeType={pnlChangeType}
-          isLoading={isLoading}
+          isLoading={portfolioLoading}
         />
-        <Metric label="Positions" value={positions.length} isLoading={isLoading} />
+        <Metric label="Positions" value={positions.length} isLoading={portfolioLoading} />
       </div>
 
-      {error && (
+      {portfolioError && (
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
-          <AlertDescription>{error}</AlertDescription>
+          <AlertDescription>{portfolioError}</AlertDescription>
         </Alert>
       )}
 
@@ -162,7 +134,7 @@ export default function Portfolio() {
             <CardTitle className="text-lg">Holdings</CardTitle>
           </CardHeader>
           <CardContent>
-            {isLoading && positions.length === 0 ? (
+            {portfolioLoading && positions.length === 0 ? (
               <SkeletonTable rows={5} columns={4} />
             ) : positions.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
@@ -221,7 +193,7 @@ export default function Portfolio() {
             <CardTitle className="text-lg">Sector Allocation</CardTitle>
           </CardHeader>
           <CardContent>
-            {isLoading && sectorAllocations.length === 0 ? (
+            {portfolioLoading && sectorAllocations.length === 0 ? (
               <div className="h-[300px] flex items-center justify-center">
                 <div className="text-muted-foreground">Loading chart...</div>
               </div>

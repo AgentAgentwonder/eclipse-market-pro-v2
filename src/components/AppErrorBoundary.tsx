@@ -1,4 +1,4 @@
-import React, { Component, type ErrorInfo, type ReactNode } from 'react';
+import React, { Component, type ErrorInfo, type ReactNode, useCallback } from 'react';
 import { errorLogger } from '@/utils/errorLogger';
 import { useUIStore } from '../store/uiStore';
 
@@ -87,7 +87,13 @@ interface ErrorFallbackProps {
  * Default error fallback component
  */
 function ErrorFallback({ error, onReset }: ErrorFallbackProps) {
-  const { addToast } = useUIStore();
+  const uiSelector = useCallback(
+    (state: ReturnType<typeof useUIStore.getState>) => ({
+      addToast: state.addToast,
+    }),
+    []
+  );
+  const { addToast } = useUIStore(uiSelector);
 
   const handleReportError = () => {
     // In a real app, this would send the error to a reporting service

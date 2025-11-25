@@ -6,26 +6,61 @@ import { FailsafeErrorOverlay } from './components/FailsafeErrorOverlay';
 import { errorLogger } from './utils/errorLogger';
 import './styles/globals.css';
 
-// Set up global error handler for unhandled errors
+// CRITICAL: Safe global error handlers with recursion prevention
+// These handlers must NEVER throw errors themselves to prevent infinite loops
+let errorHandlerActive = false;
+let promiseRejectionHandlerActive = false;
+
 window.addEventListener('error', (event: ErrorEvent) => {
-  errorLogger.error(event.message, 'Global Error Handler', event.error, {
-    filename: event.filename,
-    lineno: event.lineno,
-    colno: event.colno,
-  });
+  // Prevent recursive error handling
+  if (errorHandlerActive) {
+    return;
+  }
+
+  try {
+    errorHandlerActive = true;
+    // Don't log internal errorLogger errors to prevent recursion
+    if (event.message && !event.message.includes('errorLogger')) {
+      errorLogger.error(event.message, 'Global Error Handler', event.error, {
+        filename: event.filename,
+        lineno: event.lineno,
+        colno: event.colno,
+      });
+    }
+  } catch (_e) {
+    // Silently ignore - do not call errorLogger as it could cause infinite recursion
+  } finally {
+    errorHandlerActive = false;
+  }
 });
 
 // Set up global handler for unhandled promise rejections
 window.addEventListener('unhandledrejection', (event: PromiseRejectionEvent) => {
-  const reason = event.reason;
-  if (reason instanceof Error) {
-    errorLogger.error(
-      `Unhandled Promise Rejection: ${reason.message}`,
-      'Global Promise Handler',
-      reason
-    );
-  } else {
-    errorLogger.error(`Unhandled Promise Rejection: ${String(reason)}`, 'Global Promise Handler');
+  // Prevent recursive rejection handling
+  if (promiseRejectionHandlerActive) {
+    return;
+  }
+
+  try {
+    promiseRejectionHandlerActive = true;
+    const reason = event.reason;
+    if (reason instanceof Error) {
+      errorLogger.error(
+        `Unhandled Promise Rejection: ${reason.message}`,
+        'Global Promise Handler',
+        reason
+      );
+    } else {
+      const reasonStr = String(reason);
+      // Don't log internal errorLogger errors to prevent recursion
+      if (!reasonStr.includes('errorLogger')) {
+        errorLogger.error(`Unhandled Promise Rejection: ${reasonStr}`, 'Global Promise Handler');
+      }
+    }
+  } catch (_e) {
+    // Silently ignore - do not call errorLogger as it could cause infinite recursion
+  } finally {
+    promiseRejectionHandlerActive = false;
   }
 });
 
@@ -65,7 +100,7 @@ try {
   if (root) {
     const storedLogs = localStorage.getItem('eclipse_error_logs');
     const previousErrors = storedLogs ? JSON.parse(storedLogs).slice(-5) : [];
-    
+
     root.innerHTML = `
       <div style="
         display: flex;
@@ -115,7 +150,9 @@ try {
             ">${error instanceof Error ? error.stack || 'No stack trace available' : String(error)}</pre>
           </div>
 
-          ${previousErrors.length > 0 ? `
+          ${
+            previousErrors.length > 0
+              ? `
           <details style="margin-bottom: 20px;">
             <summary style="
               cursor: pointer;
@@ -134,7 +171,9 @@ try {
               max-height: 200px;
               overflow-y: auto;
             ">
-              ${previousErrors.map((log) => `
+              ${previousErrors
+                .map(
+                  (log: any) => `
                 <div style="margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid #333;">
                   <div style="color: #ffffff; font-size: 12px; font-weight: bold; margin-bottom: 4px;">
                     ${log.source}
@@ -146,10 +185,14 @@ try {
                     ${new Date(log.timestamp).toLocaleString()}
                   </div>
                 </div>
-              `).join('')}
+              `
+                )
+                .join('')}
             </div>
           </details>
-          ` : ''}
+          `
+              : ''
+          }
           
           <div style="
             display: flex;

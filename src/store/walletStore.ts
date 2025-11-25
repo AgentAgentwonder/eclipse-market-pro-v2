@@ -286,3 +286,18 @@ export const useActiveAccount = () => {
 export const useAddressBook = () => {
   return useWalletStore(state => state.addressBook);
 };
+
+export const useWalletStatus = () => {
+  return useWalletStore(state => ({
+    isLoading: state.isLoading,
+    error: state.error,
+  }));
+};
+
+export const useSendWorkflow = () => {
+  return useWalletStore(state => state.sendWorkflow);
+};
+
+export const useSwapHistory = () => {
+  return useWalletStore(state => state.swapHistory);
+};

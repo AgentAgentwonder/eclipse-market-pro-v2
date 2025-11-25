@@ -44,7 +44,14 @@ export function useStreamingCommand(
   const [error, setError] = useState<TauriError | null>(null);
   const [streamId, setStreamId] = useState<string | null>(null);
 
-  const { setLoading, addToast } = useUIStore();
+  const uiSelector = useCallback(
+    (state: ReturnType<typeof useUIStore.getState>) => ({
+      setLoading: state.setLoading,
+      addToast: state.addToast,
+    }),
+    []
+  );
+  const { setLoading, addToast } = useUIStore(uiSelector);
   const mountedRef = useRef(true);
   const contentRef = useRef('');
   const streamIdRef = useRef<string | null>(null);

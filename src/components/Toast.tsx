@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useUIStore, type ToastMessage } from '../store/uiStore';
 
 interface ToastProps {
@@ -129,7 +129,14 @@ export function Toast({ toast, onRemove }: ToastProps) {
  * Toast container component that manages all toasts
  */
 export function ToastContainer() {
-  const { toasts, removeToast } = useUIStore();
+  const uiSelector = useCallback(
+    (state: ReturnType<typeof useUIStore.getState>) => ({
+      toasts: state.toasts,
+      removeToast: state.removeToast,
+    }),
+    []
+  );
+  const { toasts, removeToast } = useUIStore(uiSelector);
 
   if (toasts.length === 0) {
     return null;
@@ -150,7 +157,15 @@ export function ToastContainer() {
  * Hook for easy toast management
  */
 export function useToast() {
-  const { addToast, removeToast, clearToasts } = useUIStore();
+  const uiSelector = useCallback(
+    (state: ReturnType<typeof useUIStore.getState>) => ({
+      addToast: state.addToast,
+      removeToast: state.removeToast,
+      clearToasts: state.clearToasts,
+    }),
+    []
+  );
+  const { addToast, removeToast, clearToasts } = useUIStore(uiSelector);
 
   return {
     success: (

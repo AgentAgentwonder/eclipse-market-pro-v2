@@ -15,16 +15,21 @@ export function DevErrorDisplay({ children }: DevErrorDisplayProps) {
   const [errors, setErrors] = useState<ErrorLog[]>([]);
   const [showDetails, setShowDetails] = useState(false);
   const [isExpanded, setIsExpanded] = useState(true);
+  const [lastLogCount, setLastLogCount] = useState(0);
 
-  // Subscribe to error logger updates
+  // Subscribe to error logger updates - only update when logs actually change
   useEffect(() => {
     const interval = setInterval(() => {
       const logs = errorLogger.getLogs();
-      setErrors(logs);
-    }, 100);
+      // Only update state if the number of logs has changed
+      if (logs.length !== lastLogCount) {
+        setErrors(logs);
+        setLastLogCount(logs.length);
+      }
+    }, 500); // Increased interval from 100ms to 500ms to reduce polling frequency
 
     return () => clearInterval(interval);
-  }, []);
+  }, [lastLogCount]);
 
   // Only show in development mode
   if (process.env.NODE_ENV !== 'development') {

@@ -1,5 +1,4 @@
 import { invoke } from '@tauri-apps/api/core';
-import { subscribeWithSelector } from 'zustand/middleware';
 import type { Order, CreateOrderRequest, OrderUpdate, QuickTradeRequest } from '../types';
 import { createBoundStore } from './createBoundStore';
 
@@ -49,7 +48,7 @@ const initialState = {
   error: null,
 };
 
-const storeWithMiddleware = (set: any, get: any, api: any) => ({
+const storeResult = createBoundStore<TradingStoreState>((set, get) => ({
   ...initialState,
 
   initialize: async () => {
@@ -272,11 +271,7 @@ const storeWithMiddleware = (set: any, get: any, api: any) => ({
   reset: () => {
     set(initialState);
   },
-});
-
-const storeResult = createBoundStore<TradingStoreState>((set, get, api) =>
-  subscribeWithSelector(storeWithMiddleware)(set, get, api)
-);
+}));
 
 export const useTradingStore = storeResult.useStore;
 export const tradingStore = storeResult.store;
