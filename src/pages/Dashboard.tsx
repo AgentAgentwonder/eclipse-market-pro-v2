@@ -2,8 +2,9 @@ import { useEffect, useMemo } from 'react';
 import { Metric } from '@/components/ui/metric';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { SkeletonTable } from '@/components/ui/skeleton-table';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { StatusBadge } from '@/components/ui/status-badge';
+import { AppStatusBanner } from '@/components/AppStatusBanner';
 import { useWalletStore } from '@/store/walletStore';
 import { useTradingStore } from '@/store/tradingStore';
 import { usePortfolioStore } from '@/store/portfolioStore';
@@ -16,13 +17,11 @@ export default function Dashboard() {
   const balances = useWalletStore(state => state.balances);
   const fetchBalances = useWalletStore(state => state.fetchBalances);
   const walletLoading = useWalletStore(state => state.isLoading);
-  const walletError = useWalletStore(state => state.error);
 
   // Trading selectors - primitive returns
   const activeOrders = useTradingStore(state => state.activeOrders);
   const getActiveOrders = useTradingStore(state => state.getActiveOrders);
   const tradingLoading = useTradingStore(state => state.isLoading);
-  const tradingError = useTradingStore(state => state.error);
 
   // Portfolio selectors - primitive returns
   const totalValue = usePortfolioStore(state => state.totalValue);
@@ -30,13 +29,11 @@ export default function Dashboard() {
   const totalPnlPercent = usePortfolioStore(state => state.totalPnlPercent);
   const fetchAnalytics = usePortfolioStore(state => state.fetchAnalytics);
   const portfolioLoading = usePortfolioStore(state => state.isLoading);
-  const portfolioError = usePortfolioStore(state => state.error);
 
   // AI selectors - primitive returns
   const patternWarnings = useAiStore(state => state.patternWarnings);
   const fetchPatternWarnings = useAiStore(state => state.fetchPatternWarnings);
   const aiLoading = useAiStore(state => state.isLoading);
-  const aiError = useAiStore(state => state.error);
 
   useEffect(() => {
     if (activeAccount) {
@@ -99,15 +96,8 @@ export default function Dashboard() {
         />
       </div>
 
-      {/* Errors */}
-      {(walletError || tradingError || portfolioError || aiError) && (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            {walletError || tradingError || portfolioError || aiError}
-          </AlertDescription>
-        </Alert>
-      )}
+      {/* Unified Error and Status Display */}
+      <AppStatusBanner />
 
       {/* Pattern Warnings */}
       {patternWarnings && patternWarnings.length > 0 && (

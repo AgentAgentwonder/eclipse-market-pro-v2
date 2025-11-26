@@ -7,3 +7,4 @@ export * from './uiStore';
 export * from './themeStore';
 export * from './accessibilityStore';
 export * from './marketDataStore';
+export * from './appStatusStore';

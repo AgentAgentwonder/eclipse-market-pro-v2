@@ -1,16 +1,14 @@
 import { useEffect } from 'react';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { OrderForm } from '@/components/trading/OrderForm';
 import { OrderBlotter } from '@/components/trading/OrderBlotter';
 import { RiskBanner } from '@/components/trading/RiskBanner';
+import { AppStatusBanner } from '@/components/AppStatusBanner';
 import { useTradingStore } from '@/store/tradingStore';
-import { AlertCircle } from 'lucide-react';
 
 export default function Trading() {
   // Trading selectors - primitive returns
   const isInitialized = useTradingStore(state => state.isInitialized);
   const initialize = useTradingStore(state => state.initialize);
-  const error = useTradingStore(state => state.error);
 
   useEffect(() => {
     if (!isInitialized) {
@@ -25,12 +23,7 @@ export default function Trading() {
         <p className="text-muted-foreground mt-1">Execute trades and manage your positions</p>
       </div>
 
-      {error && (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
+      <AppStatusBanner />
 
       <RiskBanner />
 

@@ -8,6 +8,7 @@ import type {
   StreamingMetadata,
 } from '../types';
 import { createBoundStore } from './createBoundStore';
+import { appStatusStore } from './appStatusStore';
 
 interface AiStoreState {
   chatHistory: ChatMessage[];
@@ -74,9 +75,12 @@ const storeResult = createBoundStore<AiStoreState>((set, get) => ({
       get().addMessage(assistantMessage);
 
       set({ isLoading: false });
+      appStatusStore.getState().clearError('ai');
       return response;
     } catch (error) {
-      set({ error: String(error), isLoading: false });
+      const errorMsg = String(error);
+      set({ error: errorMsg, isLoading: false });
+      appStatusStore.getState().reportError('ai', errorMsg, error);
       throw error;
     }
   },
@@ -156,8 +160,11 @@ const storeResult = createBoundStore<AiStoreState>((set, get) => ({
     try {
       const warnings = await invoke<PatternWarning[]>('ai_get_pattern_warnings');
       set({ patternWarnings: warnings, isLoading: false });
+      appStatusStore.getState().clearError('ai');
     } catch (error) {
-      set({ error: String(error), isLoading: false });
+      const errorMsg = String(error);
+      set({ error: errorMsg, isLoading: false });
+      appStatusStore.getState().reportError('ai', errorMsg, error);
     }
   },
 
@@ -180,9 +187,12 @@ const storeResult = createBoundStore<AiStoreState>((set, get) => ({
         holdings,
       });
       set({ isLoading: false });
+      appStatusStore.getState().clearError('ai');
       return optimization;
     } catch (error) {
-      set({ error: String(error), isLoading: false });
+      const errorMsg = String(error);
+      set({ error: errorMsg, isLoading: false });
+      appStatusStore.getState().reportError('ai', errorMsg, error);
       throw error;
     }
   },
@@ -222,8 +232,11 @@ const storeResult = createBoundStore<AiStoreState>((set, get) => ({
         amount,
       });
       set({ isLoading: false });
+      appStatusStore.getState().clearError('ai');
     } catch (error) {
-      set({ error: String(error), isLoading: false });
+      const errorMsg = String(error);
+      set({ error: errorMsg, isLoading: false });
+      appStatusStore.getState().reportError('ai', errorMsg, error);
       throw error;
     }
   },

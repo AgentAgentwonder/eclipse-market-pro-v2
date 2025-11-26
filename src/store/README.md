@@ -5,10 +5,12 @@ This directory contains Zustand 5 stores for Eclipse Market Pro. All stores use 
 ## Architecture
 
 - **createBoundStore.ts** - Helper that creates Zustand stores with `subscribeWithSelector` middleware enabled by default, typed hooks, and re-exports `useShallow` from `zustand/react/shallow`
+- **appStatusStore.ts** - Centralized error and connection status tracking across all domains (wallet, trading, portfolio, AI, market)
 - **walletStore.ts** - Wallet accounts, balances, fee estimates, send workflow (uses `subscribeWithSelector`)
 - **tradingStore.ts** - Orders, drafts, optimistic updates (uses `subscribeWithSelector`)
 - **portfolioStore.ts** - Positions, analytics cache, sector allocation (uses `subscribeWithSelector`)
 - **aiStore.ts** - Chat history, pattern warnings, streaming metadata (uses `subscribeWithSelector`)
+- **marketDataStore.ts** - Real-time price data, new coin detection, stream status (uses `subscribeWithSelector`)
 - **uiStore.ts** - Theme, panel visibility, dev console toggle (uses `subscribeWithSelector` + `persist`)
 - **themeStore.ts** - Custom theme management (uses `subscribeWithSelector` + `persist`)
 - **accessibilityStore.ts** - Accessibility preferences (uses `subscribeWithSelector` + `persist`)
@@ -592,12 +594,116 @@ const selector = useCallback(state => ({ a: state.a, b: state.b }), []);
 const data = useStore(selector, useShallow);
 ```
 
+## Unified Error/Status Reporting
+
+### Overview
+
+The `appStatusStore` provides centralized error and connection status tracking across all application domains (wallet, trading, portfolio, AI, market). This ensures error states and recovery signals propagate consistently across all pages.
+
+### AppStatusStore
+
+**State:**
+- `errors`: Map of per-domain error objects with timestamps and details
+- `statuses`: Map of per-domain connection/streaming status
+
+**Key Actions:**
+- `reportError(domain, message, details?)` - Report an error for a domain
+- `clearError(domain)` - Clear error for a domain
+- `reportConnectionStatus(domain, state, provider?, errorMessage?)` - Report connection status
+
+**Convenience Hooks:**
+- `useAppErrors()` - Get all active errors
+- `useDomainError(domain)` - Get error for specific domain
+- `useDomainStatus(domain)` - Get connection status for specific domain
+- `useHasErrors()` - Check if any errors exist
+- `useAllStatuses()` - Get all connection statuses
+
+### Integration Pattern
+
+All domain stores (wallet, trading, portfolio, AI) integrate with `appStatusStore`:
+
+```typescript
+import { appStatusStore } from './appStatusStore';
+
+// In async actions:
+try {
+  const result = await invoke('some_command');
+  // Clear error on success
+  appStatusStore.getState().clearError('wallet');
+  return result;
+} catch (error) {
+  const errorMsg = String(error);
+  set({ error: errorMsg, isLoading: false });
+  // Report error to central store
+  appStatusStore.getState().reportError('wallet', errorMsg, error);
+  throw error;
+}
+```
+
+Event bridges report connection status:
+
+```typescript
+// On successful connection
+appStatusStore.getState().reportConnectionStatus('trading', 'connected', 'TradingEventBridge');
+
+// On connection failure
+appStatusStore.getState().reportConnectionStatus('trading', 'error', 'TradingEventBridge', String(error));
+```
+
+### UI Components
+
+Use the `AppStatusBanner` component for unified error/status display:
+
+```typescript
+import { AppStatusBanner } from '@/components/AppStatusBanner';
+
+export default function MyPage() {
+  return (
+    <div>
+      <AppStatusBanner />
+      {/* rest of page */}
+    </div>
+  );
+}
+```
+
+The banner automatically displays:
+- All active errors with timestamps and domain labels
+- Connection issues with provider details
+- Auto-hides when all errors/issues are resolved
+
+### Benefits
+
+1. **Single Source of Truth**: Errors appear consistently across all pages
+2. **Automatic Propagation**: Connection losses/recoveries update all pages simultaneously
+3. **No Duplication**: Components rely on shared status selectors instead of local state
+4. **Centralized Logging**: All errors flow through one store for debugging
+5. **Recovery Detection**: Errors automatically clear when operations succeed
+
+### Testing Errors
+
+To test the unified error system:
+
+```typescript
+// Trigger an error
+await walletStore.getState().fetchBalances('invalid-address');
+
+// Check appStatusStore
+const errors = appStatusStore.getState().errors;
+expect(errors.has('wallet')).toBe(true);
+
+// Clear error
+appStatusStore.getState().clearError('wallet');
+```
+
 ## Summary
 
 - **All stores** use `subscribeWithSelector` by default (via `createBoundStore` or included in `createBoundStoreWithMiddleware`)
 - **Persisted stores** (ui, theme, accessibility) use `createBoundStoreWithMiddleware` with both `subscribeWithSelector` and `persist`
+- **Domain stores** (wallet, trading, portfolio, AI, market) integrate with `appStatusStore` for unified error/status tracking
 - **Components** always use memoized selectors + `useShallow` for object/array selections
+- **Error display** uses `AppStatusBanner` component for consistent presentation across pages
 - **Convenience hooks** simplify common selection patterns
 - **Type safety** is enforced throughout
 
-This architecture ensures optimal performance, prevents stale snapshots, and provides a consistent developer experience across all stores.
+This architecture ensures optimal performance, prevents stale snapshots, provides consistent error handling, and delivers a unified developer experience across all stores.

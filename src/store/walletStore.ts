@@ -11,6 +11,7 @@ import type {
   SwapHistoryEntry,
 } from '../types';
 import { createBoundStore } from './createBoundStore';
+import { appStatusStore } from './appStatusStore';
 
 export interface WalletAccount {
   publicKey: string;
@@ -102,8 +103,11 @@ const storeResult = createBoundStore<WalletStoreState>((set, get) => ({
         balances: { ...state.balances, [address]: balances },
         isLoading: false,
       }));
+      appStatusStore.getState().clearError('wallet');
     } catch (error) {
-      set({ error: String(error), isLoading: false });
+      const errorMsg = String(error);
+      set({ error: errorMsg, isLoading: false });
+      appStatusStore.getState().reportError('wallet', errorMsg, error);
     }
   },
 
@@ -127,8 +131,11 @@ const storeResult = createBoundStore<WalletStoreState>((set, get) => ({
         feeEstimates: { ...state.feeEstimates, [key]: estimate },
         isLoading: false,
       }));
+      appStatusStore.getState().clearError('wallet');
     } catch (error) {
-      set({ error: String(error), isLoading: false });
+      const errorMsg = String(error);
+      set({ error: errorMsg, isLoading: false });
+      appStatusStore.getState().reportError('wallet', errorMsg, error);
     }
   },
 
@@ -140,9 +147,12 @@ const storeResult = createBoundStore<WalletStoreState>((set, get) => ({
         walletAddress,
       });
       set({ isLoading: false });
+      appStatusStore.getState().clearError('wallet');
       return signature;
     } catch (error) {
-      set({ error: String(error), isLoading: false });
+      const errorMsg = String(error);
+      set({ error: errorMsg, isLoading: false });
+      appStatusStore.getState().reportError('wallet', errorMsg, error);
       throw error;
     }
   },
@@ -200,8 +210,11 @@ const storeResult = createBoundStore<WalletStoreState>((set, get) => ({
     try {
       const contacts = await invoke<AddressBookContact[]>('address_book_list_contacts');
       set({ addressBook: contacts, isLoading: false });
+      appStatusStore.getState().clearError('wallet');
     } catch (error) {
-      set({ error: String(error), isLoading: false });
+      const errorMsg = String(error);
+      set({ error: errorMsg, isLoading: false });
+      appStatusStore.getState().reportError('wallet', errorMsg, error);
     }
   },
 
@@ -246,8 +259,11 @@ const storeResult = createBoundStore<WalletStoreState>((set, get) => ({
         walletAddress,
       });
       set({ swapHistory: history, isLoading: false });
+      appStatusStore.getState().clearError('wallet');
     } catch (error) {
-      set({ error: String(error), isLoading: false });
+      const errorMsg = String(error);
+      set({ error: errorMsg, isLoading: false });
+      appStatusStore.getState().reportError('wallet', errorMsg, error);
     }
   },
 
