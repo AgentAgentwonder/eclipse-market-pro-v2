@@ -41,6 +41,7 @@ interface WalletStoreState {
   setAccounts: (accounts: WalletAccount[]) => void;
   setActiveAccount: (account: WalletAccount | null) => void;
   fetchBalances: (address: string, forceRefresh?: boolean) => Promise<void>;
+  refreshActiveAccountBalances: () => Promise<void>;
   estimateFee: (recipient: string, amount: number, tokenMint?: string) => Promise<void>;
   sendTransaction: (input: SendTransactionInput, walletAddress: string) => Promise<string>;
   addContact: (request: AddContactRequest) => Promise<AddressBookContact>;
@@ -103,6 +104,13 @@ const storeResult = createBoundStore<WalletStoreState>((set, get) => ({
       }));
     } catch (error) {
       set({ error: String(error), isLoading: false });
+    }
+  },
+
+  refreshActiveAccountBalances: async () => {
+    const activeAccount = get().activeAccount;
+    if (activeAccount) {
+      await get().fetchBalances(activeAccount.publicKey, true);
     }
   },
 

@@ -8,6 +8,7 @@ export {
   useThrottledCallback,
 } from './useStableCallback';
 export { useDevConsole, useDevConsoleShortcuts, useDevConsoleAutoSetup } from './useDevConsole';
+export { useTradingEventBridge } from './useTradingEventBridge';
 
 // Re-export existing hooks
 export { useIsMobile as useMobile } from './use-mobile';
