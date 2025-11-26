@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { useState } from 'react';
 import Sidebar from '@/components/sidebar';
+import { useTradingEventBridge } from '@/hooks/useTradingEventBridge';
 
 interface ClientLayoutProps {
   children: ReactNode;
@@ -8,6 +9,8 @@ interface ClientLayoutProps {
 
 export default function ClientLayout({ children }: ClientLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
+
+  useTradingEventBridge();
 
   return (
     <div className="flex h-screen overflow-hidden bg-background text-foreground">
