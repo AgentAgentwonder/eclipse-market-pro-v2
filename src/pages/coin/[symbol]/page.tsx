@@ -6,6 +6,7 @@ import { useAPIKeys } from '@/lib/api-context';
 import { Card } from '@/components/ui/card';
 import { ArrowLeft } from 'lucide-react';
 import CandlestickChart from '@/components/candlestick-chart';
+import { usePrice, useStreamConnected } from '@/store/marketDataStore';
 
 interface CoinData {
   symbol: string;
@@ -17,8 +18,7 @@ interface CoinData {
   change24h: number;
 }
 
-// Mock coin data
-const getCoinData = (symbol: string): CoinData => ({
+const getMockCoinData = (symbol: string): CoinData => ({
   symbol,
   name: `${symbol} Token`,
   price: 0.000045,
@@ -33,6 +33,9 @@ export default function CoinDetailPage() {
   const navigate = useNavigate();
   const { apiKeys } = useAPIKeys();
   const coinSymbol = (params.symbol ?? 'SOL').toUpperCase();
+  
+  const priceData = usePrice(coinSymbol);
+  const isStreamConnected = useStreamConnected();
 
   const [coin, setCoin] = useState<CoinData | null>(null);
   const [buyAmount, setBuyAmount] = useState<string>('');
@@ -40,8 +43,23 @@ export default function CoinDetailPage() {
 
   useEffect(() => {
     setMounted(true);
-    setCoin(getCoinData(coinSymbol));
-  }, [coinSymbol]);
+  }, []);
+
+  useEffect(() => {
+    if (priceData) {
+      setCoin({
+        symbol: coinSymbol,
+        name: `${coinSymbol} Token`,
+        price: priceData.price,
+        marketCap: priceData.volume * 100,
+        holders: 125000,
+        totalFees: 15000,
+        change24h: priceData.change24h,
+      });
+    } else {
+      setCoin(getMockCoinData(coinSymbol));
+    }
+  }, [coinSymbol, priceData]);
 
   if (!mounted || !coin) {
     return <div className="p-8 text-center text-muted-foreground">Loading coin...</div>;
@@ -71,16 +89,26 @@ export default function CoinDetailPage() {
   return (
     <div className="p-4 h-screen overflow-hidden flex flex-col space-y-4 fade-in">
       {/* Header */}
-      <div className="flex items-center gap-4">
-        <button
-          onClick={() => navigate(-1)}
-          className="p-2 hover:bg-muted rounded transition-colors"
-        >
-          <ArrowLeft className="w-5 h-5 text-foreground" />
-        </button>
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">{coin.symbol}</h1>
-          <p className="text-muted-foreground">{coin.name}</p>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => navigate(-1)}
+            className="p-2 hover:bg-muted rounded transition-colors"
+          >
+            <ArrowLeft className="w-5 h-5 text-foreground" />
+          </button>
+          <div>
+            <h1 className="text-3xl font-bold text-foreground">{coin.symbol}</h1>
+            <p className="text-muted-foreground">{coin.name}</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <div
+            className={`w-2 h-2 rounded-full ${isStreamConnected ? 'bg-accent' : 'bg-muted-foreground'}`}
+          />
+          <span className="text-sm text-muted-foreground">
+            {isStreamConnected ? 'Live Price' : 'Offline'}
+          </span>
         </div>
       </div>
 

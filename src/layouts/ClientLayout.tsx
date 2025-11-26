@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { useState } from 'react';
 import Sidebar from '@/components/sidebar';
 import { useTradingEventBridge } from '@/hooks/useTradingEventBridge';
+import { useMarketStreamBridge } from '@/hooks/useMarketStreamBridge';
 
 interface ClientLayoutProps {
   children: ReactNode;
@@ -11,6 +12,7 @@ export default function ClientLayout({ children }: ClientLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
   useTradingEventBridge();
+  useMarketStreamBridge();
 
   return (
     <div className="flex h-screen overflow-hidden bg-background text-foreground">
