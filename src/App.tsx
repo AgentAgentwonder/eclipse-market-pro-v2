@@ -1,7 +1,6 @@
 import { HashRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { AppErrorBoundary } from '@/components';
 import { AccessibilityProvider } from '@/components/providers/AccessibilityProvider';
-import { APIProvider } from '@/lib/api-context';
 import ClientLayout from '@/layouts/ClientLayout';
 import Dashboard from '@/pages/Dashboard';
 import Portfolio from '@/pages/Portfolio';
@@ -39,11 +38,10 @@ import CoinDetailPage from '@/pages/coin/[symbol]/page';
 function App() {
   return (
     <AppErrorBoundary>
-      <APIProvider>
-        <AccessibilityProvider>
-          <HashRouter>
-            <ClientLayout>
-              <Routes>
+      <AccessibilityProvider>
+        <HashRouter>
+          <ClientLayout>
+            <Routes>
                 <Route path="/" element={<Navigate to="/dashboard" replace />} />
                 
                 {/* Main Pages */}
@@ -98,7 +96,6 @@ function App() {
             </ClientLayout>
           </HashRouter>
         </AccessibilityProvider>
-      </APIProvider>
     </AppErrorBoundary>
   );
 }

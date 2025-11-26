@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useAPIKeys } from '@/lib/api-context';
+import { useSelectedCrypto, useSettingsStore } from '@/store';
 
 // Phantom wallet supported cryptocurrencies with mock data
 const PHANTOM_CRYPTOS = [
@@ -14,14 +14,15 @@ const PHANTOM_CRYPTOS = [
 ];
 
 export default function CryptoSelector() {
-  const { apiKeys, setAPIKey } = useAPIKeys();
+  const selectedCryptoSymbol = useSelectedCrypto();
+  const updateSetting = useSettingsStore(state => state.updateSetting);
   const [isOpen, setIsOpen] = useState(false);
 
   const selectedCrypto =
-    PHANTOM_CRYPTOS.find(c => c.symbol === apiKeys.selectedCrypto) || PHANTOM_CRYPTOS[0];
+    PHANTOM_CRYPTOS.find(c => c.symbol === selectedCryptoSymbol) || PHANTOM_CRYPTOS[0];
 
   const handleSelect = (symbol: string) => {
-    setAPIKey('selectedCrypto', symbol);
+    updateSetting('selectedCrypto', symbol);
     setIsOpen(false);
   };
 
@@ -50,7 +51,7 @@ export default function CryptoSelector() {
                 key={crypto.symbol}
                 onClick={() => handleSelect(crypto.symbol)}
                 className={`w-full px-4 py-3 text-left hover:bg-muted/30 transition-colors border-b border-border/50 last:border-b-0 ${
-                  crypto.symbol === apiKeys.selectedCrypto ? 'bg-accent/10' : ''
+                  crypto.symbol === selectedCryptoSymbol ? 'bg-accent/10' : ''
                 }`}
               >
                 <div className="flex justify-between items-start">

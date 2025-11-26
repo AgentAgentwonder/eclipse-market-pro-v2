@@ -8,6 +8,7 @@ import { useWalletStore } from '@/store/walletStore';
 import { useTradingStore } from '@/store/tradingStore';
 import { usePortfolioStore } from '@/store/portfolioStore';
 import { useAiStore } from '@/store/aiStore';
+import { usePaperTrading } from '@/store';
 import { Wallet, TrendingUp, AlertCircle, Activity } from 'lucide-react';
 
 export default function Dashboard() {
@@ -37,6 +38,9 @@ export default function Dashboard() {
   const fetchPatternWarnings = useAiStore(state => state.fetchPatternWarnings);
   const aiLoading = useAiStore(state => state.isLoading);
   const aiError = useAiStore(state => state.error);
+
+  // Settings selectors - paper trading
+  const { enabled: paperTradingEnabled, balance: paperTradingBalance } = usePaperTrading();
 
   useEffect(() => {
     if (activeAccount) {
@@ -68,6 +72,20 @@ export default function Dashboard() {
         <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
         <p className="text-muted-foreground mt-1">Welcome back to Eclipse Market Pro</p>
       </div>
+
+      {/* Paper Trading Banner */}
+      {paperTradingEnabled && (
+        <Alert className="bg-accent/10 border-accent">
+          <TrendingUp className="h-4 w-4 text-accent" />
+          <AlertDescription className="text-accent">
+            Paper Trading Mode Active - Virtual Balance: $
+            {paperTradingBalance.toLocaleString('en-US', {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })}
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* Metrics Row */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">

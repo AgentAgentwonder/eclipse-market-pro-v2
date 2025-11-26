@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useAPIKeys } from '@/lib/api-context';
+import { useSettingsStore, useShallow } from '@/store';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChevronUp, ChevronDown, TrendingUp } from 'lucide-react';
 
@@ -82,7 +82,16 @@ const generateMockCoins = (): Coin[] => [
 ];
 
 export default function FreshCoinsPage() {
-  const { apiKeys, setAPIKey } = useAPIKeys();
+  const { minMarketCap, buyInAmounts, defaultBuyInAmount, updateSetting, addBuyInPreset, removeBuyInPreset } = useSettingsStore(
+    useShallow(state => ({
+      minMarketCap: state.minMarketCap,
+      buyInAmounts: state.buyInAmounts,
+      defaultBuyInAmount: state.defaultBuyInAmount,
+      updateSetting: state.updateSetting,
+      addBuyInPreset: state.addBuyInPreset,
+      removeBuyInPreset: state.removeBuyInPreset,
+    }))
+  );
   const [coins, setCoins] = useState<Coin[]>([]);
   const [selectedBuyin, setSelectedBuyin] = useState<{ [key: string]: number }>({});
   const [sortBy, setSortBy] = useState<'marketCap' | 'price' | 'holders' | 'athMarketCap' | 'age'>(
@@ -113,7 +122,7 @@ export default function FreshCoinsPage() {
   };
 
   const sortedCoins = [...coins]
-    .filter(coin => coin.marketCap >= apiKeys.minMarketCap)
+    .filter(coin => coin.marketCap >= minMarketCap)
     .sort((a, b) => {
       let aVal, bVal;
       switch (sortBy) {
@@ -154,17 +163,13 @@ export default function FreshCoinsPage() {
   const handleAddCustomBuyIn = () => {
     const amount = Number.parseFloat(customBuyIn);
     if (!isNaN(amount) && amount > 0) {
-      const currentAmounts = apiKeys.buyInAmounts || [10, 25, 50, 100];
-      const updated = [...currentAmounts, amount].sort((a, b) => a - b);
-      setAPIKey('buyInAmounts', updated);
+      addBuyInPreset(amount);
       setCustomBuyIn('');
     }
   };
 
   const handleRemoveBuyIn = (amount: number) => {
-    const currentAmounts = apiKeys.buyInAmounts || [10, 25, 50, 100];
-    const updated = currentAmounts.filter(a => a !== amount);
-    setAPIKey('buyInAmounts', updated);
+    removeBuyInPreset(amount);
   };
 
   const riskIndicator = (risk: string) => {
@@ -193,7 +198,7 @@ export default function FreshCoinsPage() {
       <Card className="bg-card border-border">
         <CardHeader>
           <CardTitle>
-            New Listings (Market Cap {(apiKeys.minMarketCap / 1000000).toFixed(0)}M+)
+            New Listings (Market Cap {(minMarketCap / 1000000).toFixed(0)}M+)
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -204,9 +209,9 @@ export default function FreshCoinsPage() {
               </label>
               <input
                 type="number"
-                value={(apiKeys.minMarketCap || 25000000) / 1000000}
+                value={minMarketCap / 1000000}
                 onChange={e =>
-                  setAPIKey(
+                  updateSetting(
                     'minMarketCap',
                     Math.max(1, Number.parseFloat(e.target.value) || 25) * 1000000
                   )
@@ -237,12 +242,12 @@ export default function FreshCoinsPage() {
           </div>
 
           <div className="flex gap-2 flex-wrap p-4 bg-muted/5 rounded-lg border border-border">
-            {(apiKeys.buyInAmounts || [10, 25, 50, 100]).map(amount => (
+            {buyInAmounts.map(amount => (
               <button
                 key={amount}
-                onClick={() => setAPIKey('defaultBuyInAmount', amount)}
+                onClick={() => updateSetting('defaultBuyInAmount', amount)}
                 className={`text-xs px-3 py-2 rounded border transition-colors group relative ${
-                  apiKeys.defaultBuyInAmount === amount
+                  defaultBuyInAmount === amount
                     ? 'bg-accent border-accent text-primary-foreground'
                     : 'border-border hover:border-accent hover:text-accent'
                 }`}
@@ -254,7 +259,7 @@ export default function FreshCoinsPage() {
               >
                 {sortedCoins.length > 0
                   ? getCryptoBuyAmount(amount, sortedCoins[0].price, sortedCoins[0].symbol)
-                  : `$${amount}`}
+                  : `${amount}`}
               </button>
             ))}
             <button
@@ -365,7 +370,7 @@ export default function FreshCoinsPage() {
                       {coin.riskLevel.toUpperCase()}
                     </div>
                     <button
-                      onClick={() => handleBuyIn(coin.symbol, apiKeys.defaultBuyInAmount)}
+                      onClick={() => handleBuyIn(coin.symbol, defaultBuyInAmount)}
                       className="text-xs px-3 py-1 rounded bg-accent hover:bg-accent/90 text-primary-foreground transition-colors font-medium"
                     >
                       Quick Buy

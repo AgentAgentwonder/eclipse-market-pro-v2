@@ -3,23 +3,41 @@
 import type React from 'react';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { useAPIKeys } from '@/lib/api-context';
+import { useSettingsStore, useShallow } from '@/store';
 import { Wallet, Lock, Eye, EyeOff, Check, X, TrendingUp, Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 
 export default function SettingsPage() {
-  const { apiKeys, setAPIKey, clearAPIKeys } = useAPIKeys();
+  const settings = useSettingsStore(
+    useShallow(state => ({
+      databaseUrl: state.databaseUrl,
+      sentrySdn: state.sentrySdn,
+      claudeApiKey: state.claudeApiKey,
+      openaiApiKey: state.openaiApiKey,
+      llmProvider: state.llmProvider,
+      twitterBearerToken: state.twitterBearerToken,
+      paperTradingEnabled: state.paperTradingEnabled,
+      paperTradingBalance: state.paperTradingBalance,
+      buyInAmounts: state.buyInAmounts,
+      defaultBuyInAmount: state.defaultBuyInAmount,
+      phantomConnected: state.phantomConnected,
+      phantomAddress: state.phantomAddress,
+      updateSetting: state.updateSetting,
+      togglePaperTrading: state.togglePaperTrading,
+      addBuyInPreset: state.addBuyInPreset,
+      removeBuyInPreset: state.removeBuyInPreset,
+      connectPhantom: state.connectPhantom,
+      disconnectPhantom: state.disconnectPhantom,
+      resetSettings: state.resetSettings,
+    }))
+  );
+
   const [showPasswords, setShowPasswords] = useState<Record<string, boolean>>({});
-  const [walletConnected, setWalletConnected] = useState(false);
-  const [walletAddress, setWalletAddress] = useState('');
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [paperTradingInput, setPaperTradingInput] = useState(
-    apiKeys?.paperTradingBalance?.toString() || '10000'
+    settings.paperTradingBalance.toString()
   );
   const [newBuyInAmount, setNewBuyInAmount] = useState('');
-  const [buyInAmounts, setBuyInAmounts] = useState<number[]>(
-    apiKeys?.buyInAmounts || [10, 25, 50, 100]
-  );
 
   const togglePasswordVisibility = (field: string) => {
     setShowPasswords(prev => ({
@@ -32,8 +50,7 @@ export default function SettingsPage() {
     try {
       const response = await (window as any).solana?.connect();
       if (response?.publicKey) {
-        setWalletAddress(response.publicKey.toString());
-        setWalletConnected(true);
+        settings.connectPhantom(response.publicKey.toString());
         setSaveSuccess(true);
         setTimeout(() => setSaveSuccess(false), 3000);
       }
@@ -46,8 +63,7 @@ export default function SettingsPage() {
   const handleDisconnectPhantom = async () => {
     try {
       await (window as any).solana?.disconnect();
-      setWalletConnected(false);
-      setWalletAddress('');
+      settings.disconnectPhantom();
     } catch (error) {
       console.error('Failed to disconnect Phantom wallet:', error);
     }
@@ -60,14 +76,14 @@ export default function SettingsPage() {
 
   const handleClearAPIKeys = () => {
     if (window.confirm('Are you sure you want to clear all API keys? This cannot be undone.')) {
-      clearAPIKeys();
+      settings.resetSettings();
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
     }
   };
 
   const handlePaperTradingToggle = () => {
-    setAPIKey('paperTradingEnabled', !apiKeys?.paperTradingEnabled);
+    settings.togglePaperTrading();
     setSaveSuccess(true);
     setTimeout(() => setSaveSuccess(false), 3000);
   };
@@ -83,14 +99,14 @@ export default function SettingsPage() {
       alert('Please enter a valid amount');
       return;
     }
-    setAPIKey('paperTradingBalance', balance);
+    settings.updateSetting('paperTradingBalance', balance);
     setSaveSuccess(true);
     setTimeout(() => setSaveSuccess(false), 3000);
   };
 
   const handleResetPaperTrading = () => {
     if (window.confirm('Reset paper trading balance to $10,000?')) {
-      setAPIKey('paperTradingBalance', 10000);
+      settings.updateSetting('paperTradingBalance', 10000);
       setPaperTradingInput('10000');
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
@@ -103,31 +119,24 @@ export default function SettingsPage() {
       alert('Please enter a valid amount');
       return;
     }
-    if (buyInAmounts.includes(amount)) {
+    if (settings.buyInAmounts.includes(amount)) {
       alert('This amount already exists');
       return;
     }
-    const updated = [...buyInAmounts, amount].sort((a, b) => a - b);
-    setBuyInAmounts(updated);
+    settings.addBuyInPreset(amount);
     setNewBuyInAmount('');
-    setAPIKey('buyInAmounts', updated);
     setSaveSuccess(true);
     setTimeout(() => setSaveSuccess(false), 3000);
   };
 
   const handleRemoveBuyInAmount = (amount: number) => {
-    const updated = buyInAmounts.filter(a => a !== amount);
-    setBuyInAmounts(updated);
-    setAPIKey('buyInAmounts', updated);
-    if (apiKeys?.defaultBuyInAmount === amount) {
-      setAPIKey('defaultBuyInAmount', updated[0] || 50);
-    }
+    settings.removeBuyInPreset(amount);
     setSaveSuccess(true);
     setTimeout(() => setSaveSuccess(false), 3000);
   };
 
   const handleSetDefaultBuyIn = (amount: number) => {
-    setAPIKey('defaultBuyInAmount', amount);
+    settings.updateSetting('defaultBuyInAmount', amount);
     setSaveSuccess(true);
     setTimeout(() => setSaveSuccess(false), 3000);
   };
@@ -189,12 +198,12 @@ export default function SettingsPage() {
           <CardDescription>Connect your Phantom wallet for seamless trading</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {walletConnected ? (
+          {settings.phantomConnected ? (
             <div className="bg-accent/10 border border-accent rounded-lg p-4">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-foreground">Connected Wallet</p>
-                  <p className="text-xs text-muted-foreground font-mono mt-1">{walletAddress}</p>
+                  <p className="text-xs text-muted-foreground font-mono mt-1">{settings.phantomAddress}</p>
                 </div>
                 <div className="px-3 py-1 bg-accent/20 text-accent rounded text-xs font-medium flex items-center gap-1">
                   <Check className="w-3 h-3" />
@@ -278,16 +287,16 @@ export default function SettingsPage() {
               Your Quick Buy-In Amounts
             </label>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-              {buyInAmounts.length === 0 ? (
+              {settings.buyInAmounts.length === 0 ? (
                 <p className="text-xs text-muted-foreground col-span-full">
                   No buy-in amounts configured. Add one to get started.
                 </p>
               ) : (
-                buyInAmounts.map(amount => (
+                settings.buyInAmounts.map(amount => (
                   <div
                     key={amount}
                     className={`flex items-center justify-between px-3 py-2 rounded border transition-colors ${
-                      apiKeys?.defaultBuyInAmount === amount
+                      settings.defaultBuyInAmount === amount
                         ? 'bg-accent/20 border-accent'
                         : 'bg-muted/10 border-border hover:border-primary'
                     }`}
@@ -296,12 +305,12 @@ export default function SettingsPage() {
                       <input
                         type="radio"
                         name="default-buyin"
-                        checked={apiKeys?.defaultBuyInAmount === amount}
+                        checked={settings.defaultBuyInAmount === amount}
                         onChange={() => handleSetDefaultBuyIn(amount)}
                         className="w-4 h-4 cursor-pointer"
                       />
                       <span className="text-sm font-medium text-foreground">${amount}</span>
-                      {apiKeys?.defaultBuyInAmount === amount && (
+                      {settings.defaultBuyInAmount === amount && (
                         <span className="text-xs text-accent font-semibold ml-auto">Default</span>
                       )}
                     </div>
@@ -342,7 +351,7 @@ export default function SettingsPage() {
             <div>
               <p className="text-sm font-medium text-foreground">Paper Trading Mode</p>
               <p className="text-xs text-muted-foreground mt-1">
-                {apiKeys?.paperTradingEnabled
+                {settings.paperTradingEnabled
                   ? 'Active - Trading with virtual funds'
                   : 'Disabled - Enable to start practicing'}
               </p>
@@ -350,16 +359,16 @@ export default function SettingsPage() {
             <button
               onClick={handlePaperTradingToggle}
               className={`px-4 py-2 rounded font-medium transition-colors ${
-                apiKeys?.paperTradingEnabled
+                settings.paperTradingEnabled
                   ? 'bg-accent text-accent-foreground hover:opacity-90'
                   : 'bg-muted text-muted-foreground hover:bg-muted/80'
               }`}
             >
-              {apiKeys?.paperTradingEnabled ? 'Deactivate' : 'Activate'}
+              {settings.paperTradingEnabled ? 'Deactivate' : 'Activate'}
             </button>
           </div>
 
-          {apiKeys?.paperTradingEnabled && (
+          {settings.paperTradingEnabled && (
             <div className="space-y-4 pt-2">
               <div>
                 <label className="text-sm font-medium text-foreground block mb-2">
@@ -393,10 +402,10 @@ export default function SettingsPage() {
                 <p className="text-sm font-medium text-foreground mb-1">Current Virtual Balance</p>
                 <p className="text-2xl font-bold text-accent">
                   $
-                  {apiKeys?.paperTradingBalance?.toLocaleString('en-US', {
+                  {settings.paperTradingBalance.toLocaleString('en-US', {
                     minimumFractionDigits: 2,
                     maximumFractionDigits: 2,
-                  }) || '10000'}
+                  })}
                 </p>
                 <button
                   onClick={handleResetPaperTrading}
@@ -439,8 +448,8 @@ export default function SettingsPage() {
             </label>
             <input
               type="text"
-              value={apiKeys?.databaseUrl}
-              onChange={e => setAPIKey('databaseUrl', e.target.value)}
+              value={settings.databaseUrl}
+              onChange={e => settings.updateSetting('databaseUrl', e.target.value)}
               placeholder="sqlite:./database.db"
               className="w-full bg-input rounded px-3 py-2 text-foreground mt-1 border border-border focus:outline-none focus:ring-2 focus:ring-primary font-mono text-xs"
             />
@@ -454,8 +463,8 @@ export default function SettingsPage() {
             </label>
             <input
               type="text"
-              value={apiKeys?.sentrySdn}
-              onChange={e => setAPIKey('sentrySdn', e.target.value)}
+              value={settings.sentrySdn}
+              onChange={e => settings.updateSetting('sentrySdn', e.target.value)}
               placeholder="https://your-key@sentry.io/project-id"
               className="w-full bg-input rounded px-3 py-2 text-foreground mt-1 border border-border focus:outline-none focus:ring-2 focus:ring-primary font-mono text-xs"
             />
@@ -468,9 +477,9 @@ export default function SettingsPage() {
               {['claude', 'gpt4'].map(provider => (
                 <button
                   key={provider}
-                  onClick={() => setAPIKey('llmProvider', provider as 'claude' | 'gpt4')}
+                  onClick={() => settings.updateSetting('llmProvider', provider as 'claude' | 'gpt4')}
                   className={`py-2 px-3 rounded border transition-colors ${
-                    apiKeys?.llmProvider === provider
+                    settings.llmProvider === provider
                       ? 'bg-primary border-primary text-primary-foreground'
                       : 'bg-muted/10 border-border text-foreground hover:border-primary'
                   }`}
@@ -490,8 +499,8 @@ export default function SettingsPage() {
             <div className="relative">
               <input
                 type={showPasswords['claude'] ? 'text' : 'password'}
-                value={apiKeys?.claudeApiKey}
-                onChange={e => setAPIKey('claudeApiKey', e.target.value)}
+                value={settings.claudeApiKey}
+                onChange={e => settings.updateSetting('claudeApiKey', e.target.value)}
                 placeholder="sk-ant-..."
                 className="w-full bg-input rounded px-3 py-2 pr-10 text-foreground mt-1 border border-border focus:outline-none focus:ring-2 focus:ring-primary font-mono text-xs"
               />
@@ -517,8 +526,8 @@ export default function SettingsPage() {
             <div className="relative">
               <input
                 type={showPasswords['openai'] ? 'text' : 'password'}
-                value={apiKeys?.openaiApiKey}
-                onChange={e => setAPIKey('openaiApiKey', e.target.value)}
+                value={settings.openaiApiKey}
+                onChange={e => settings.updateSetting('openaiApiKey', e.target.value)}
                 placeholder="sk-proj-..."
                 className="w-full bg-input rounded px-3 py-2 pr-10 text-foreground mt-1 border border-border focus:outline-none focus:ring-2 focus:ring-primary font-mono text-xs"
               />
@@ -544,8 +553,8 @@ export default function SettingsPage() {
             <div className="relative">
               <input
                 type={showPasswords['twitter'] ? 'text' : 'password'}
-                value={apiKeys?.twitterBearerToken}
-                onChange={e => setAPIKey('twitterBearerToken', e.target.value)}
+                value={settings.twitterBearerToken}
+                onChange={e => settings.updateSetting('twitterBearerToken', e.target.value)}
                 placeholder="AAAA..."
                 className="w-full bg-input rounded px-3 py-2 pr-10 text-foreground mt-1 border border-border focus:outline-none focus:ring-2 focus:ring-primary font-mono text-xs"
               />

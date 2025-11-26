@@ -7,6 +7,7 @@ import { Metric } from '@/components/ui/metric';
 import { usePortfolioStore } from '@/store/portfolioStore';
 import { useWalletStore } from '@/store/walletStore';
 import { useAiStore } from '@/store/aiStore';
+import { usePaperTrading } from '@/store';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import { AlertCircle, TrendingUp, Sparkles } from 'lucide-react';
 
@@ -31,6 +32,9 @@ export default function Portfolio() {
   // AI selectors - primitive returns
   const optimizePortfolio = useAiStore(state => state.optimizePortfolio);
   const aiLoading = useAiStore(state => state.isLoading);
+
+  // Settings selectors - paper trading
+  const { enabled: paperTradingEnabled, balance: paperTradingBalance } = usePaperTrading();
 
   useEffect(() => {
     if (activeAccount) {
@@ -86,6 +90,19 @@ export default function Portfolio() {
           {aiLoading ? 'Optimizing...' : 'AI Optimize'}
         </Button>
       </div>
+
+      {paperTradingEnabled && (
+        <Alert className="bg-accent/10 border-accent">
+          <TrendingUp className="h-4 w-4 text-accent" />
+          <AlertDescription className="text-accent">
+            Paper Trading Mode Active - Virtual Balance: $
+            {paperTradingBalance.toLocaleString('en-US', {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })}
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
