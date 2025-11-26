@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAPIKeys } from '@/lib/api-context';
 import { Card } from '@/components/ui/card';
+import { useNewCoins, useStreamConnected, usePriceMap } from '@/store/marketDataStore';
 
 interface Coin {
   symbol: string;
@@ -70,6 +71,10 @@ const generateMockCoins = (): Coin[] => [
 
 export default function NewCoins() {
   const { apiKeys, setAPIKey } = useAPIKeys();
+  const newCoinsFromStore = useNewCoins({ minSafetyScore: 50 });
+  const isStreamConnected = useStreamConnected();
+  const priceMap = usePriceMap();
+  
   const [coins, setCoins] = useState<Coin[]>([]);
   const [sortBy, setSortBy] = useState<'marketCap' | 'price' | 'holders' | 'athMarketCap' | 'age'>(
     'marketCap'
@@ -77,18 +82,36 @@ export default function NewCoins() {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [customBuyIn, setCustomBuyIn] = useState('');
   const [mounted, setMounted] = useState(false);
-  const [isUpdating, setIsUpdating] = useState(false);
 
   useEffect(() => {
     setMounted(true);
-    setCoins(generateMockCoins());
-    const interval = setInterval(() => {
-      setIsUpdating(true);
-      setCoins(generateMockCoins());
-      setTimeout(() => setIsUpdating(false), 200);
-    }, 1000);
-    return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    if (newCoinsFromStore.length > 0) {
+      const liveCoins: Coin[] = newCoinsFromStore.map(coin => {
+        const priceData = priceMap.get(coin.symbol);
+        const price = priceData?.price ?? 0.000001;
+        const change24h = priceData?.change24h ?? 0;
+        
+        return {
+          symbol: coin.symbol,
+          name: coin.name,
+          marketCap: coin.liquidity * 10,
+          athMarketCap: coin.liquidity * 12,
+          price,
+          holders: coin.holderCount,
+          totalFees: Math.floor(coin.liquidity * 0.01),
+          change24h,
+          createdAt: new Date(coin.createdAt),
+          riskLevel: coin.safetyScore >= 80 ? 'low' : coin.safetyScore >= 60 ? 'medium' : 'high',
+        };
+      });
+      setCoins(liveCoins);
+    } else if (!isStreamConnected) {
+      setCoins(generateMockCoins());
+    }
+  }, [newCoinsFromStore, priceMap, isStreamConnected]);
 
   const getCoinAge = (createdAt: Date) => {
     const now = new Date();
@@ -191,9 +214,11 @@ export default function NewCoins() {
             </h2>
             <div className="flex items-center gap-1">
               <div
-                className={`w-2 h-2 rounded-full ${isUpdating ? 'bg-accent animate-pulse' : 'bg-accent/50'}`}
+                className={`w-2 h-2 rounded-full ${isStreamConnected ? 'bg-accent' : 'bg-muted-foreground'}`}
               />
-              <span className="text-xs text-muted-foreground">Live</span>
+              <span className="text-xs text-muted-foreground">
+                {isStreamConnected ? 'Live' : 'Offline'}
+              </span>
             </div>
           </div>
           <div className="flex gap-0.5 overflow-x-auto">
