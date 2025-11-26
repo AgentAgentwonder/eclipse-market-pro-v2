@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useAPIKeys } from '@/lib/api-context';
+import { useSettingsStore, useShallow } from '@/store';
 import { Card } from '@/components/ui/card';
 
 interface Coin {
@@ -82,7 +82,16 @@ const generateMockCoins = (): Coin[] => [
 ];
 
 export default function MarketOverview() {
-  const { apiKeys, setAPIKey } = useAPIKeys();
+  const { minMarketCap, buyInAmounts, defaultBuyInAmount, updateSetting, addBuyInPreset, removeBuyInPreset } = useSettingsStore(
+    useShallow(state => ({
+      minMarketCap: state.minMarketCap,
+      buyInAmounts: state.buyInAmounts,
+      defaultBuyInAmount: state.defaultBuyInAmount,
+      updateSetting: state.updateSetting,
+      addBuyInPreset: state.addBuyInPreset,
+      removeBuyInPreset: state.removeBuyInPreset,
+    }))
+  );
   const [coins, setCoins] = useState<Coin[]>([]);
   const [selectedBuyin, setSelectedBuyin] = useState<{ [key: string]: number }>({});
   const [sortBy, setSortBy] = useState<'marketCap' | 'price' | 'holders' | 'athMarketCap' | 'age'>(
@@ -115,7 +124,7 @@ export default function MarketOverview() {
   };
 
   const sortedCoins = [...coins]
-    .filter(coin => coin.marketCap >= apiKeys.minMarketCap)
+    .filter(coin => coin.marketCap >= minMarketCap)
     .sort((a, b) => {
       let aVal, bVal;
       switch (sortBy) {
@@ -156,19 +165,13 @@ export default function MarketOverview() {
   const handleAddCustomBuyIn = () => {
     const amount = Number.parseFloat(customBuyIn);
     if (!isNaN(amount) && amount > 0) {
-      const current = Array.isArray(apiKeys.buyInAmounts)
-        ? apiKeys.buyInAmounts
-        : [10, 25, 50, 100];
-      const updated = [...current, amount].sort((a, b) => a - b);
-      setAPIKey('buyInAmounts', updated);
+      addBuyInPreset(amount);
       setCustomBuyIn('');
     }
   };
 
   const handleRemoveBuyIn = (amount: number) => {
-    const current = Array.isArray(apiKeys.buyInAmounts) ? apiKeys.buyInAmounts : [10, 25, 50, 100];
-    const updated = current.filter(a => a !== amount);
-    setAPIKey('buyInAmounts', updated);
+    removeBuyInPreset(amount);
   };
 
   const riskIndicator = (risk: string) => {
@@ -192,10 +195,6 @@ export default function MarketOverview() {
     );
   }
 
-  const buyInAmounts = apiKeys.buyInAmounts || [10, 25, 50, 100];
-  const defaultBuyInAmount = apiKeys.defaultBuyInAmount || 50;
-  const minMarketCap = apiKeys.minMarketCap || 25000000;
-
   return (
     <Card className="bg-card border-border p-6">
       <div className="space-y-4">
@@ -217,7 +216,7 @@ export default function MarketOverview() {
               type="number"
               value={minMarketCap / 1000000}
               onChange={e =>
-                setAPIKey(
+                updateSetting(
                   'minMarketCap',
                   Math.max(1, Number.parseFloat(e.target.value) || 25) * 1000000
                 )
@@ -251,7 +250,7 @@ export default function MarketOverview() {
           {buyInAmounts.map(amount => (
             <button
               key={amount}
-              onClick={() => setAPIKey('defaultBuyInAmount', amount)}
+              onClick={() => updateSetting('defaultBuyInAmount', amount)}
               className={`text-xs px-3 py-2 rounded border transition-colors group relative ${
                 defaultBuyInAmount === amount
                   ? 'bg-accent border-accent text-primary-foreground'

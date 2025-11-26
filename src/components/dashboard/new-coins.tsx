@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useAPIKeys } from '@/lib/api-context';
+import { useSettingsStore, useShallow } from '@/store';
 import { Card } from '@/components/ui/card';
 
 interface Coin {
@@ -69,7 +69,16 @@ const generateMockCoins = (): Coin[] => [
 ];
 
 export default function NewCoins() {
-  const { apiKeys, setAPIKey } = useAPIKeys();
+  const { minMarketCap, buyInAmounts, defaultBuyInAmount, updateSetting, addBuyInPreset, removeBuyInPreset } = useSettingsStore(
+    useShallow(state => ({
+      minMarketCap: state.minMarketCap,
+      buyInAmounts: state.buyInAmounts,
+      defaultBuyInAmount: state.defaultBuyInAmount,
+      updateSetting: state.updateSetting,
+      addBuyInPreset: state.addBuyInPreset,
+      removeBuyInPreset: state.removeBuyInPreset,
+    }))
+  );
   const [coins, setCoins] = useState<Coin[]>([]);
   const [sortBy, setSortBy] = useState<'marketCap' | 'price' | 'holders' | 'athMarketCap' | 'age'>(
     'marketCap'
@@ -103,7 +112,7 @@ export default function NewCoins() {
   };
 
   const sortedCoins = [...coins]
-    .filter(coin => coin.marketCap >= apiKeys.minMarketCap)
+    .filter(coin => coin.marketCap >= minMarketCap)
     .sort((a, b) => {
       let aVal, bVal;
       switch (sortBy) {
@@ -136,19 +145,13 @@ export default function NewCoins() {
   const handleAddCustomBuyIn = () => {
     const amount = Number.parseFloat(customBuyIn);
     if (!isNaN(amount) && amount > 0) {
-      const current = Array.isArray(apiKeys.buyInAmounts)
-        ? apiKeys.buyInAmounts
-        : [10, 25, 50, 100];
-      const updated = [...current, amount].sort((a, b) => a - b);
-      setAPIKey('buyInAmounts', updated);
+      addBuyInPreset(amount);
       setCustomBuyIn('');
     }
   };
 
   const handleRemoveBuyIn = (amount: number) => {
-    const current = Array.isArray(apiKeys.buyInAmounts) ? apiKeys.buyInAmounts : [10, 25, 50, 100];
-    const updated = current.filter(a => a !== amount);
-    setAPIKey('buyInAmounts', updated);
+    removeBuyInPreset(amount);
   };
 
   const riskIndicator = (risk: string) => {
@@ -175,10 +178,6 @@ export default function NewCoins() {
       </Card>
     );
   }
-
-  const buyInAmounts = apiKeys.buyInAmounts || [10, 25, 50, 100];
-  const defaultBuyInAmount = apiKeys.defaultBuyInAmount || 50;
-  const minMarketCap = apiKeys.minMarketCap || 25000000;
 
   return (
     <Card className="bg-card border-border p-3 h-full flex flex-col">
@@ -319,7 +318,7 @@ export default function NewCoins() {
                 type="number"
                 value={minMarketCap / 1000000}
                 onChange={e =>
-                  setAPIKey(
+                  updateSetting(
                     'minMarketCap',
                     Math.max(1, Number.parseFloat(e.target.value) || 25) * 1000000
                   )
@@ -354,7 +353,7 @@ export default function NewCoins() {
                 {buyInAmounts.map(amount => (
                   <button
                     key={amount}
-                    onClick={() => setAPIKey('defaultBuyInAmount', amount)}
+                    onClick={() => updateSetting('defaultBuyInAmount', amount)}
                     className={`text-xs px-2 py-0.5 rounded border transition-colors ${
                       defaultBuyInAmount === amount
                         ? 'bg-accent border-accent text-primary-foreground'
@@ -367,7 +366,7 @@ export default function NewCoins() {
                   >
                     {sortedCoins.length > 0
                       ? getCryptoBuyAmount(amount, sortedCoins[0].price, sortedCoins[0].symbol)
-                      : `$${amount}`}
+                      : `${amount}`}
                   </button>
                 ))}
                 <button className="text-xs px-2 py-0.5 rounded border border-border hover:border-accent hover:text-accent font-semibold">

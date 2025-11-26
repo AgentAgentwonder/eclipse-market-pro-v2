@@ -2,7 +2,7 @@
 
 import { useNavigate, useParams } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { useAPIKeys } from '@/lib/api-context';
+import { useQuickBuys } from '@/store';
 import { Card } from '@/components/ui/card';
 import { ArrowLeft } from 'lucide-react';
 import CandlestickChart from '@/components/candlestick-chart';
@@ -31,7 +31,7 @@ const getCoinData = (symbol: string): CoinData => ({
 export default function CoinDetailPage() {
   const params = useParams<{ symbol?: string }>();
   const navigate = useNavigate();
-  const { apiKeys } = useAPIKeys();
+  const { amounts: buyInAmounts } = useQuickBuys();
   const coinSymbol = (params.symbol ?? 'SOL').toUpperCase();
 
   const [coin, setCoin] = useState<CoinData | null>(null);
@@ -65,8 +65,6 @@ export default function CoinDetailPage() {
       setBuyAmount('');
     }
   };
-
-  const buyInAmounts = apiKeys.buyInAmounts || [10, 25, 50, 100];
 
   return (
     <div className="p-4 h-screen overflow-hidden flex flex-col space-y-4 fade-in">
