@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { listen, type UnlistenFn } from '@tauri-apps/api/event';
 import { marketDataStore, type PriceData, type NewCoin } from '../store/marketDataStore';
 import { useUIStore } from '../store/uiStore';
+import { appStatusStore } from '../store/appStatusStore';
 
 interface PriceUpdateEvent {
   symbol: string;
@@ -164,6 +165,7 @@ export function useMarketStreamBridge() {
             marketDataStore.getState().setConnected(isConnected);
 
             if (payload.state === 'Failed' || payload.state === 'Disconnected') {
+              appStatusStore.getState().reportConnectionStatus('market', 'disconnected', payload.provider);
               addToast({
                 type: 'warning',
                 title: 'Market Stream Disconnected',
@@ -171,6 +173,7 @@ export function useMarketStreamBridge() {
                 duration: 8000,
               });
             } else if (isConnected) {
+              appStatusStore.getState().reportConnectionStatus('market', 'connected', payload.provider);
               addToast({
                 type: 'success',
                 title: 'Market Stream Connected',
@@ -189,8 +192,10 @@ export function useMarketStreamBridge() {
         ];
 
         console.log('[MarketStreamBridge] Event listeners registered');
+        appStatusStore.getState().reportConnectionStatus('market', 'connected', 'MarketStreamBridge');
       } catch (error) {
         console.error('[MarketStreamBridge] Failed to setup event listeners:', error);
+        appStatusStore.getState().reportConnectionStatus('market', 'error', 'MarketStreamBridge', String(error));
         if (mounted) {
           addToast({
             type: 'error',

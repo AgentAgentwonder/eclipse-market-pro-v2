@@ -3,6 +3,7 @@ import { listen, type UnlistenFn } from '@tauri-apps/api/event';
 import { tradingStore } from '../store/tradingStore';
 import { walletStore } from '../store/walletStore';
 import { useUIStore } from '../store/uiStore';
+import { appStatusStore } from '../store/appStatusStore';
 import type { Order, OrderUpdate } from '../types';
 
 interface OrderTriggeredEvent {
@@ -158,6 +159,7 @@ export function useTradingEventBridge() {
 
             console.error('Order monitoring stopped:', message);
             tradingStore.getState().setError('Order monitoring stopped unexpectedly');
+            appStatusStore.getState().reportConnectionStatus('trading', 'error', 'OrderManager', message);
 
             addToast({
               type: 'error',
@@ -178,8 +180,10 @@ export function useTradingEventBridge() {
         ];
 
         console.log('[TradingEventBridge] Event listeners registered');
+        appStatusStore.getState().reportConnectionStatus('trading', 'connected', 'TradingEventBridge');
       } catch (error) {
         console.error('[TradingEventBridge] Failed to setup event listeners:', error);
+        appStatusStore.getState().reportConnectionStatus('trading', 'error', 'TradingEventBridge', String(error));
         if (mounted) {
           addToast({
             type: 'error',

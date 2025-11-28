@@ -1,6 +1,7 @@
 import { invoke } from '@tauri-apps/api/core';
 import type { Position, PortfolioAnalytics, SectorAllocation, ConcentrationAlert } from '../types';
 import { createBoundStore } from './createBoundStore';
+import { appStatusStore } from './appStatusStore';
 
 interface AnalyticsCache {
   data: PortfolioAnalytics;
@@ -79,9 +80,12 @@ const storeResult = createBoundStore<PortfolioStoreState>((set, get) => ({
         isLoading: false,
       }));
 
+      appStatusStore.getState().clearError('portfolio');
       return analytics;
     } catch (error) {
-      set({ error: String(error), isLoading: false });
+      const errorMsg = String(error);
+      set({ error: errorMsg, isLoading: false });
+      appStatusStore.getState().reportError('portfolio', errorMsg, error);
       throw error;
     }
   },
@@ -93,8 +97,11 @@ const storeResult = createBoundStore<PortfolioStoreState>((set, get) => ({
         walletAddress,
       });
       set({ sectorAllocations: allocations, isLoading: false });
+      appStatusStore.getState().clearError('portfolio');
     } catch (error) {
-      set({ error: String(error), isLoading: false });
+      const errorMsg = String(error);
+      set({ error: errorMsg, isLoading: false });
+      appStatusStore.getState().reportError('portfolio', errorMsg, error);
     }
   },
 

@@ -1,6 +1,7 @@
 import { invoke } from '@tauri-apps/api/core';
 import type { Order, CreateOrderRequest, OrderUpdate, QuickTradeRequest } from '../types';
 import { createBoundStore } from './createBoundStore';
+import { appStatusStore } from './appStatusStore';
 
 export interface OrderDraft {
   id: string;
@@ -58,8 +59,11 @@ const storeResult = createBoundStore<TradingStoreState>((set, get) => ({
     try {
       await invoke('trading_init');
       set({ isInitialized: true, isLoading: false });
+      appStatusStore.getState().clearError('trading');
     } catch (error) {
-      set({ error: String(error), isLoading: false });
+      const errorMsg = String(error);
+      set({ error: errorMsg, isLoading: false });
+      appStatusStore.getState().reportError('trading', errorMsg, error);
     }
   },
 
@@ -100,10 +104,13 @@ const storeResult = createBoundStore<TradingStoreState>((set, get) => ({
         isLoading: false,
       }));
 
+      appStatusStore.getState().clearError('trading');
       return order;
     } catch (error) {
       get().removeOptimisticOrder(optimisticOrder.id);
-      set({ error: String(error), isLoading: false });
+      const errorMsg = String(error);
+      set({ error: errorMsg, isLoading: false });
+      appStatusStore.getState().reportError('trading', errorMsg, error);
       throw error;
     }
   },
@@ -131,8 +138,11 @@ const storeResult = createBoundStore<TradingStoreState>((set, get) => ({
     try {
       const orders = await invoke<Order[]>('get_active_orders', { walletAddress });
       set({ activeOrders: orders, isLoading: false });
+      appStatusStore.getState().clearError('trading');
     } catch (error) {
-      set({ error: String(error), isLoading: false });
+      const errorMsg = String(error);
+      set({ error: errorMsg, isLoading: false });
+      appStatusStore.getState().reportError('trading', errorMsg, error);
     }
   },
 
@@ -141,8 +151,11 @@ const storeResult = createBoundStore<TradingStoreState>((set, get) => ({
     try {
       const orders = await invoke<Order[]>('get_order_history', { walletAddress, limit });
       set({ orderHistory: orders, isLoading: false });
+      appStatusStore.getState().clearError('trading');
     } catch (error) {
-      set({ error: String(error), isLoading: false });
+      const errorMsg = String(error);
+      set({ error: errorMsg, isLoading: false });
+      appStatusStore.getState().reportError('trading', errorMsg, error);
     }
   },
 

@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { SkeletonTable } from '@/components/ui/skeleton-table';
 import { Metric } from '@/components/ui/metric';
+import { AppStatusBanner } from '@/components/AppStatusBanner';
 import { usePortfolioStore } from '@/store/portfolioStore';
 import { useWalletStore } from '@/store/walletStore';
 import { useAiStore } from '@/store/aiStore';
@@ -26,7 +27,6 @@ export default function Portfolio() {
   const fetchSectorAllocations = usePortfolioStore(state => state.fetchSectorAllocations);
   const refreshPortfolio = usePortfolioStore(state => state.refreshPortfolio);
   const portfolioLoading = usePortfolioStore(state => state.isLoading);
-  const portfolioError = usePortfolioStore(state => state.error);
 
   // AI selectors - primitive returns
   const optimizePortfolio = useAiStore(state => state.optimizePortfolio);
@@ -105,12 +105,7 @@ export default function Portfolio() {
         <Metric label="Positions" value={positions.length} isLoading={portfolioLoading} />
       </div>
 
-      {portfolioError && (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>{portfolioError}</AlertDescription>
-        </Alert>
-      )}
+      <AppStatusBanner />
 
       {/* Concentration Alerts */}
       {concentrationAlerts.length > 0 && (
